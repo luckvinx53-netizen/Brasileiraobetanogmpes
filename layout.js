@@ -18,8 +18,8 @@ function renderTopbar() {
         <div class="brand">
           <div class="brand-mark">B</div>
           <div class="brand-text">
-            <h1>Brasileirão PES</h1>
-            <p>Liga PPSSPP 2026</p>
+            <h1>Brasileirão Betano</h1>
+            <p>GMPES 2026</p>
           </div>
         </div>
       </div>
