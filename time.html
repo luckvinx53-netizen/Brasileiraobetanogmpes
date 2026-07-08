@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Time — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div id="cabecalhoTime">
+    <div class="skeleton" style="height:120px;"></div>
+  </div>
+
+  <div class="section-title">
+    <h2>Elenco</h2>
+  </div>
+
+  <div class="list" id="listaJogadoresTime">
+    <div class="skeleton" style="height:60px;"></div>
+    <div class="skeleton" style="height:60px;"></div>
+  </div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="time.js"></script>
+
+</body>
+</html>
