@@ -73,17 +73,126 @@ function marcarNavAtiva() {
 
 document.addEventListener("DOMContentLoaded", marcarNavAtiva);
 
+// =========================================================
+// SIMULAÇÃO POR MINUTAGEM
+// Cada partida "roda" em 10 minutos reais, representando os 90'
+// do jogo (1' do jogo = ~6.67s reais). Isso é calculado a partir
+// de hora_inicio_simulacao.
+// =========================================================
+
+const DURACAO_SIMULACAO_MS = 10 * 60 * 1000; // 10 minutos reais
+const MINUTOS_JOGO = 90;
+
+// Retorna o minuto atual do jogo (0 a 90), ou null se a simulação
+// ainda não começou (hora_inicio_simulacao vazio/no futuro).
+function minutoAtualDoJogo(jogo) {
+  if (!jogo.hora_inicio_simulacao) return null;
+
+  const inicio = new Date(jogo.hora_inicio_simulacao).getTime();
+  const agora = Date.now();
+  if (agora < inicio) return null;
+
+  const decorridoMs = agora - inicio;
+  const progresso = Math.min(decorridoMs / DURACAO_SIMULACAO_MS, 1);
+  return Math.floor(progresso * MINUTOS_JOGO);
+}
+
+// Calcula o placar de um jogo a partir dos eventos de Gol/Gol Contra
+async function calcularPlacarPorEventosCompartilhado(jogo) {
+  const { data: eventos, error } = await supabaseClient
+    .from("eventos_jogo")
+    .select("*")
+    .eq("jogo_id", jogo.id);
+
+  if (error) { console.error(error); return { pc: 0, pf: 0 }; }
+
+  let pc = 0, pf = 0;
+  (eventos || []).forEach(e => {
+    const eDoTimeCasa = e.time_id === jogo.time_casa_id;
+    const eDoTimeFora = e.time_id === jogo.time_fora_id;
+
+    if (e.tipo === "Gol" || e.tipo === "Pênalti Marcado") {
+      if (eDoTimeCasa) pc++;
+      else if (eDoTimeFora) pf++;
+    } else if (e.tipo === "Gol Contra") {
+      if (eDoTimeCasa) pf++;
+      else if (eDoTimeFora) pc++;
+    }
+  });
+
+  return { pc, pf };
+}
+
+// Soma/subtrai o resultado do jogo na tabela de classificação dos times
+async function ajustarTabelaClassificacao(jogo, pc, pf, modo) {
+  const { data: times, error } = await supabaseClient
+    .from("times")
+    .select("*")
+    .in("id", [jogo.time_casa_id, jogo.time_fora_id]);
+
+  if (error || !times) { console.error(error); return false; }
+
+  const timeCasa = times.find(t => t.id === jogo.time_casa_id);
+  const timeFora = times.find(t => t.id === jogo.time_fora_id);
+  if (!timeCasa || !timeFora) return false;
+
+  const casaR = { pontos: 0, jogos: 1, vitorias: 0, empates: 0, derrotas: 0, gols_pro: pc, gols_contra: pf };
+  const foraR = { pontos: 0, jogos: 1, vitorias: 0, empates: 0, derrotas: 0, gols_pro: pf, gols_contra: pc };
+
+  if (pc > pf) { casaR.pontos = 3; casaR.vitorias = 1; foraR.derrotas = 1; }
+  else if (pc < pf) { foraR.pontos = 3; foraR.vitorias = 1; casaR.derrotas = 1; }
+  else { casaR.pontos = 1; foraR.pontos = 1; casaR.empates = 1; foraR.empates = 1; }
+
+  const mult = modo === "somar" ? 1 : -1;
+
+  const novoCasa = {};
+  const novoFora = {};
+  Object.keys(casaR).forEach(k => {
+    novoCasa[k] = Math.max(0, Number(timeCasa[k] || 0) + casaR[k] * mult);
+    novoFora[k] = Math.max(0, Number(timeFora[k] || 0) + foraR[k] * mult);
+  });
+
+  await supabaseClient.from("times").update(novoCasa).eq("id", timeCasa.id);
+  await supabaseClient.from("times").update(novoFora).eq("id", timeFora.id);
+  return true;
+}
+
+// Verifica se um jogo já passou dos 90' e ainda não foi computado;
+// se sim, encerra sozinho: calcula placar pelos eventos, salva no
+// jogo e soma o resultado na tabela. Chamado a partir de qualquer
+// tela pública ou do admin ao carregar um jogo.
+async function checarEncerramentoAutomatico(jogo) {
+  if (jogo.computado === true) return jogo;
+  if (jogo.status === "Encerrado") return jogo;
+
+  const minuto = minutoAtualDoJogo(jogo);
+  if (minuto === null || minuto < MINUTOS_JOGO) return jogo;
+
+  const { pc, pf } = await calcularPlacarPorEventosCompartilhado(jogo);
+  const ok = await ajustarTabelaClassificacao(jogo, pc, pf, "somar");
+  if (!ok) return jogo;
+
+  const atualizacao = { computado: true, status: "Encerrado", placar_casa: pc, placar_fora: pf };
+  await supabaseClient.from("jogos").update(atualizacao).eq("id", jogo.id);
+
+  return { ...jogo, ...atualizacao };
+}
+
 // Card de jogo (scoreboard) reutilizado em home, jogos e detalhes
 function jogoCardHtml(jogo) {
   const casa = jogo.time_casa;
   const fora = jogo.time_fora;
-  const temPlacar = jogo.status !== "Agendado" && jogo.status !== "Adiado";
+
+  const minutoAoVivo = minutoAtualDoJogo(jogo);
+  const emAndamento = jogo.status !== "Encerrado" && jogo.status !== "Adiado" && minutoAoVivo !== null && minutoAoVivo < MINUTOS_JOGO;
+  const statusExibido = emAndamento ? "Em andamento" : jogo.status;
+  const temPlacar = statusExibido !== "Agendado" && statusExibido !== "Adiado";
 
   return `
     <div class="scoreboard" onclick="location.href='jogo.html?id=${jogo.id}'">
       <div class="scoreboard-top">
         <span class="scoreboard-meta">${jogo.rodada}ª rodada</span>
-        <span class="status-pill ${statusClasse(jogo.status)}">${jogo.status}</span>
+        <span class="status-pill ${statusClasse(statusExibido)}">${emAndamento ? `${minutoAoVivo}'` : statusExibido}</span>
       </div>
       <div class="scoreboard-main">
         <div class="time-col esquerda">
