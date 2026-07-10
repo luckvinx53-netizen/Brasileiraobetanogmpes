@@ -1,0 +1,140 @@
+/* =========================================================
+   CAMPO TÁTICO — visual de campo de futebol para escalação
+   ========================================================= */
+
+.campo-tatico{
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background:
+    linear-gradient(180deg, #0d3d1f, #0a2e17);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(255,255,255,.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+/* linhas do campo, puramente decorativas */
+.campo-tatico::before{
+  content:"";
+  position:absolute;
+  inset: 6%;
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 4px;
+}
+.campo-tatico::after{
+  content:"";
+  position:absolute;
+  top: 50%; left: 50%;
+  width: 22%; aspect-ratio:1;
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+}
+
+.posicao-slot{
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.posicao-slot .marcador{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-elev-1);
+  border: 2px solid var(--grama);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--grama);
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  transition: transform .12s ease, background .12s ease;
+}
+
+.posicao-slot.preenchido .marcador{
+  background: var(--grama);
+  color: #06110b;
+}
+
+.posicao-slot:active .marcador{ transform: scale(.92); }
+
+.posicao-slot .nome-jogador{
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  max-width: 70px;
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- MODAL DE ESCOLHA DE JOGADOR ---------- */
+.modal-jogador-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 600;
+  display:flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-jogador-sheet{
+  background: var(--bg-elev-1);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 20px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.modal-jogador-sheet h3{
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 14px;
+}
+
+.opcao-jogador{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-elev-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.opcao-jogador .info h4{ margin:0 0 2px; font-size:14px; font-weight:700; }
+.opcao-jogador .info p{ margin:0; font-size:11.5px; color: var(--text-dim); }
+.opcao-jogador.selecionado{ border: 1px solid var(--grama); }
+.opcao-jogador.indisponivel{ opacity: .35; pointer-events: none; }
+
+/* ---------- BADGE DE PRAZO ---------- */
+.prazo-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background: var(--ouro-bg);
+  color: var(--ouro);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.prazo-badge.urgente{ background: var(--vermelho-bg); color: var(--vermelho); }

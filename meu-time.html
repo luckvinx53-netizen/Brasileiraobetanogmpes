@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Time — Brasileirão Betano</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="meu-time.css">
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- GATE DE LOGIN (só técnicos passam daqui) -->
+<div class="gate" id="gateLoginTecnico">
+  <div class="gate-card">
+    <h2>Área do Técnico</h2>
+    <p>Entre com a conta vinculada ao seu time para ver estatísticas, elenco e enviar escalação.</p>
+
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmailTecnico" placeholder="voce@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginSenhaTecnico" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="fazerLoginTecnico()">Entrar</button>
+  </div>
+</div>
+
+<!-- CONTEÚDO (só aparece após login validado como técnico) -->
+<div id="conteudoMeuTime" class="hidden">
+
+  <div id="topbar-slot"></div>
+
+  <main class="container">
+
+    <div id="cabecalhoMeuTime">
+      <div class="skeleton" style="height:120px;"></div>
+    </div>
+
+    <!-- BLOCO DE ESCALAÇÃO (só aparece se houver jogo dentro do prazo) -->
+    <div id="blocoEscalacao" class="hidden">
+      <div class="section-title">
+        <h2>Enviar escalação</h2>
+      </div>
+
+      <div class="card" id="cardEscalacao">
+        <div id="infoJogoEscalacao" style="margin-bottom:18px;"></div>
+
+        <div class="field">
+          <label>Formação</label>
+          <select id="formacaoTatica" onchange="renderizarCampoTatico()">
+            <option value="4-3-3">4-3-3</option>
+            <option value="4-4-2">4-4-2</option>
+            <option value="3-5-2">3-5-2</option>
+            <option value="4-2-3-1">4-2-3-1</option>
+            <option value="3-4-3">3-4-3</option>
+            <option value="5-3-2">5-3-2</option>
+          </select>
+        </div>
+
+        <div id="campoTatico" class="campo-tatico"></div>
+
+        <p class="text-dim" style="font-size:12.5px;margin-top:14px;">
+          Toque em cada posição para escolher o jogador do seu elenco.
+        </p>
+
+        <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="enviarEscalacao()">
+          Enviar escalação
+        </button>
+
+        <div id="statusEscalacaoAtual" class="text-dim" style="font-size:12.5px;margin-top:12px;"></div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      <h2>Estatísticas do time</h2>
+    </div>
+    <div class="stat-grid" id="statsGridMeuTime"></div>
+
+    <div class="section-title">
+      <h2>Elenco</h2>
+    </div>
+    <div class="list" id="listaElencoMeuTime"></div>
+
+  </main>
+
+  <div id="bottomnav-slot"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="meu-time.js"></script>
+
+</body>
+</html>
