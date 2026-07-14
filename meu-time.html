@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Meu Time — Brasileirão Betano</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="meu-time.css">
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- GATE DE LOGIN (só técnicos passam daqui) -->
+<div class="gate" id="gateLoginTecnico">
+  <div class="gate-card">
+    <h2>Área do Técnico</h2>
+    <p>Entre com a conta vinculada ao seu time para ver estatísticas, elenco e enviar escalação.</p>
+
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmailTecnico" placeholder="voce@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginSenhaTecnico" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-block" onclick="fazerLoginTecnico()">Entrar</button>
+  </div>
+</div>
+
+<!-- CONTEÚDO (só aparece após login validado como técnico) -->
+<div id="conteudoMeuTime" class="hidden">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">
+        <div class="brand-mark" id="escudoTopoMeuTime">B</div>
+        <div class="brand-text">
+          <h1 id="nomeTopoMeuTime">Meu Time</h1>
+          <p>Área do técnico</p>
+        </div>
+      </div>
+      <div class="topbar-actions">
+        <button onclick="sairTecnico()">Sair</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+
+    <!-- ================= SEÇÃO: INÍCIO ================= -->
+    <div id="secaoInicioMeuTime" class="secao-meu-time">
+      <div id="cabecalhoMeuTime">
+        <div class="skeleton" style="height:120px;"></div>
+      </div>
+
+      <div class="section-title">
+        <h2>Estatísticas do time</h2>
+      </div>
+      <div class="stat-grid" id="statsGridMeuTime"></div>
+
+      <div class="section-title">
+        <h2>Elenco</h2>
+      </div>
+      <div class="list" id="listaElencoMeuTime"></div>
+    </div>
+
+    <!-- ================= SEÇÃO: ESCALAÇÃO ================= -->
+    <div id="secaoEscalacaoMeuTime" class="secao-meu-time hidden">
+      <div class="section-title">
+        <h2>Enviar escalação</h2>
+      </div>
+
+      <!-- Aparece quando NÃO há nenhum jogo agendado para o time -->
+      <div id="semJogoParaEscalar" class="empty-state hidden">
+        <div class="icon">⏳</div>
+        <h3>Nenhum jogo agendado</h3>
+        <p>Assim que houver um jogo marcado, ele aparecerá aqui.</p>
+      </div>
+
+      <!-- Aparece quando o prazo de escalação já fechou para o próximo jogo -->
+      <div id="contagemProximoJogo" class="card hidden" style="text-align:center;">
+        <p class="text-dim" style="font-size:12.5px;margin:0 0 6px;">Próximo jogo</p>
+        <h3 id="tituloProximoJogo" style="margin:0 0 12px;font-family:var(--font-display);font-size:22px;"></h3>
+        <div id="relogioProximoJogo" style="font-family:var(--font-display);font-size:20px;letter-spacing:.5px;color:var(--vermelho);"></div>
+        <p class="text-dim" style="font-size:12.5px;margin:14px 0 0;" id="horasAntesLabel"></p>
+      </div>
+
+      <!-- Aparece quando HÁ jogo dentro do prazo -->
+      <div id="blocoEscalacao" class="hidden">
+        <div class="card" id="cardEscalacao">
+          <div id="infoJogoEscalacao" style="margin-bottom:18px;"></div>
+
+          <div class="field">
+            <label>Formação</label>
+            <select id="formacaoTatica" onchange="renderizarCampoTatico()">
+              <option value="4-3-3">4-3-3</option>
+              <option value="4-4-2">4-4-2</option>
+              <option value="3-5-2">3-5-2</option>
+              <option value="4-2-3-1">4-2-3-1</option>
+              <option value="3-4-3">3-4-3</option>
+              <option value="5-3-2">5-3-2</option>
+            </select>
+          </div>
+
+          <div id="campoTatico" class="campo-tatico"></div>
+
+          <p class="text-dim" style="font-size:12.5px;margin-top:14px;">
+            Toque em cada posição para escolher o jogador do seu elenco.
+          </p>
+
+          <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="enviarEscalacao()">
+            Enviar escalação
+          </button>
+
+          <div id="statusEscalacaoAtual" class="text-dim" style="font-size:12.5px;margin-top:12px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= SEÇÃO: CALENDÁRIO ================= -->
+    <div id="secaoCalendarioMeuTime" class="secao-meu-time hidden">
+      <div class="section-title">
+        <h2>Calendário</h2>
+      </div>
+      <div class="list" id="listaCalendarioMeuTime">
+        <div class="skeleton" style="height:60px;"></div>
+        <div class="skeleton" style="height:60px;"></div>
+      </div>
+    </div>
+
+    <!-- ================= SEÇÃO: BID ================= -->
+    <div id="secaoBidMeuTime" class="secao-meu-time hidden">
+      <div class="section-title">
+        <h2>BID <span id="badgeBidStatus" class="badge-bid fechada">janela fechada</span></h2>
+      </div>
+
+      <!-- Sub-navegação da aba BID -->
+      <div class="subtabs-bid">
+        <button class="subtab-btn active" data-subaba="Regularizacao" onclick="abrirSubAbaBid('Regularizacao', this)">Regularização</button>
+        <button class="subtab-btn" data-subaba="Transferencias" onclick="abrirSubAbaBid('Transferencias', this)">Transferências</button>
+        <button class="subtab-btn" data-subaba="Negociacoes" onclick="abrirSubAbaBid('Negociacoes', this)">
+          Negociações <span id="badgeNegociacoesPendentes" class="badge-contador hidden">0</span>
+        </button>
+      </div>
+
+      <!-- Aparece quando a janela está fechada -->
+      <div id="bidJanelaFechadaAviso" class="empty-state">
+        <div class="icon">🔒</div>
+        <h3>Janela de transferências fechada</h3>
+        <p>A regularização de jogadores e as negociações só ficam disponíveis durante o período configurado pelo admin.</p>
+      </div>
+
+      <!-- Aparece quando a janela está aberta -->
+      <div id="blocoBid" class="hidden">
+
+        <!-- SUB-ABA: REGULARIZAÇÃO -->
+        <div id="subAbaRegularizacaoBid" class="subaba-bid">
+          <div class="card" style="margin-bottom:16px;">
+            <p class="text-dim" style="font-size:12.5px;margin-top:-4px;">
+              Solicite a regularização de um jogador do seu elenco. O pedido fica pendente até o admin aprovar.
+            </p>
+
+            <div class="field">
+              <label>Jogador</label>
+              <select id="jogadorBidSolicitar" onchange="atualizarPreviewRegularizacao()"></select>
+            </div>
+
+            <div id="previewRegularizacaoBid" class="hidden"></div>
+
+            <div class="field">
+              <label>Observação (opcional)</label>
+              <input type="text" id="obsBidSolicitar" placeholder="Ex: transferência do time X">
+            </div>
+
+            <button class="btn btn-primary btn-block" onclick="solicitarRegularizacao()">Solicitar regularização</button>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top:0;">Minhas solicitações</h3>
+            <div id="listaMinhasSolicitacoesBid"></div>
+          </div>
+        </div>
+
+        <!-- SUB-ABA: TRANSFERÊNCIAS (consultar jogadores de outros times) -->
+        <div id="subAbaTransferenciasBid" class="subaba-bid hidden">
+          <div class="card" style="margin-bottom:16px;">
+            <p class="text-dim" style="font-size:12.5px;margin-top:-4px;">
+              Veja os jogadores de outros times e envie uma consulta de valor pelo passe do atleta. O time dono recebe um aviso na aba Email.
+            </p>
+
+            <div class="field">
+              <label>Time</label>
+              <select id="timeTransferenciaSelect" onchange="carregarElencoTimeTransferencia()"></select>
+            </div>
+          </div>
+
+          <div class="list" id="listaElencoTimeTransferencia">
+            <p class="text-dim" style="font-size:13px;">Escolha um time para ver o elenco.</p>
+          </div>
+        </div>
+
+        <!-- SUB-ABA: NEGOCIAÇÕES (consultas recebidas pelo meu time e enviadas por mim) -->
+        <div id="subAbaNegociacoesBid" class="subaba-bid hidden">
+          <div class="card" style="margin-bottom:16px;">
+            <h3 style="margin-top:0;">Consultas recebidas</h3>
+            <p class="text-dim" style="font-size:12.5px;margin-top:-8px;">Pedidos de outros times pelos jogadores do seu elenco.</p>
+            <div id="listaConsultasRecebidas"></div>
+          </div>
+
+          <div class="card">
+            <h3 style="margin-top:0;">Consultas enviadas</h3>
+            <p class="text-dim" style="font-size:12.5px;margin-top:-8px;">Consultas que você fez sobre jogadores de outros times.</p>
+            <div id="listaConsultasEnviadas"></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ================= SEÇÃO: ORÇAMENTO ================= -->
+    <div id="secaoOrcamentoMeuTime" class="secao-meu-time hidden">
+      <div class="section-title">
+        <h2>Orçamento</h2>
+      </div>
+
+      <div class="card" style="display:flex;flex-direction:column;align-items:center;gap:14px;">
+        <div id="graficoOrcamentoMeuTime" style="width:220px;height:220px;"></div>
+        <div style="text-align:center;">
+          <p class="text-dim" style="margin:0;font-size:12.5px;">Orçamento disponível</p>
+          <p id="valorOrcamentoAtual" style="font-family:var(--font-display);font-size:26px;margin:2px 0 0;">—</p>
+        </div>
+      </div>
+
+      <div class="row-2" style="margin-top:14px;">
+        <div class="card" style="text-align:center;">
+          <p class="text-dim" style="margin:0;font-size:12px;">Total recebido</p>
+          <p id="valorTotalEntradas" style="font-family:var(--font-display);font-size:19px;margin:4px 0 0;color:var(--grama);">—</p>
+        </div>
+        <div class="card" style="text-align:center;">
+          <p class="text-dim" style="margin:0;font-size:12px;">Total gasto</p>
+          <p id="valorTotalSaidas" style="font-family:var(--font-display);font-size:19px;margin:4px 0 0;color:#e5484d;">—</p>
+        </div>
+      </div>
+
+      <div class="section-title" style="margin-top:20px;">
+        <h2>Movimentações</h2>
+      </div>
+      <div class="list" id="listaMovimentacoesOrcamento"></div>
+    </div>
+
+    <!-- ================= SEÇÃO: EMAIL (notificações) ================= -->
+    <div id="secaoEmailMeuTime" class="secao-meu-time hidden">
+      <div class="section-title">
+        <h2>Email</h2>
+      </div>
+      <div class="list" id="listaEmailMeuTime">
+        <div class="empty-state">
+          <div class="icon">📭</div>
+          <h3>Nenhuma mensagem</h3>
+          <p>Avisos sobre consultas de transferência e outras notificações do time aparecem aqui.</p>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <nav class="bottom-nav" id="navMeuTime">
+    <a href="#" data-secao="Inicio" class="active" onclick="return abrirSecaoMeuTime('Inicio', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v9a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1v-9"/></svg>
+      <span>Início</span>
+    </a>
+    <a href="#" data-secao="Escalacao" onclick="return abrirSecaoMeuTime('Escalacao', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2 4 5v6c0 5 3.5 8.5 8 11 4.5-2.5 8-6 8-11V5l-8-3Z"/><path d="M9 12l2 2 4-4"/></svg>
+      <span>Escalação</span>
+    </a>
+    <a href="#" data-secao="Calendario" onclick="return abrirSecaoMeuTime('Calendario', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+      <span>Calendário</span>
+    </a>
+    <a href="#" data-secao="Bid" onclick="return abrirSecaoMeuTime('Bid', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 12h6M9 16h6M9 8h6M5 4h14a1 1 0 0 1 1 1v14a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z"/></svg>
+      <span>BID</span>
+    </a>
+    <a href="#" data-secao="Orcamento" onclick="return abrirSecaoMeuTime('Orcamento', this)">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v9l6 3"/></svg>
+      <span>Orçamento</span>
+    </a>
+    <a href="#" data-secao="Email" onclick="return abrirSecaoMeuTime('Email', this)" style="position:relative;">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
+      <span>Email</span>
+      <span id="bolinhaEmailNav" class="bolinha-notificacao hidden"></span>
+    </a>
+  </nav>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="utils.js"></script>
+<script src="bid.js"></script>
+<script src="meu-time.js"></script>
+
+</body>
+</html>
