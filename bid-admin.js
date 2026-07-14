@@ -75,28 +75,53 @@ async function salvarJanelaBid() {
 // SOLICITAÇÕES DE REGULARIZAÇÃO
 // ---------------------------------------------------------
 
+// Popula o select de filtro por time na lista de solicitações de regularização,
+// reaproveitando o timesCache já carregado pelo admin.
+function popularFiltroTimeSolicitacoesBid() {
+  const select = document.getElementById("timeFiltroSolicitacoesBid");
+  if (!select || typeof timesCache === "undefined") return;
+
+  const valorAtual = select.value;
+  select.innerHTML = `<option value="">Todos os times</option>` +
+    timesCache.map(t => `<option value="${t.id}">${t.nome}</option>`).join("");
+  select.value = valorAtual;
+}
+
 async function carregarSolicitacoesBidAdmin() {
   const lista = document.getElementById("listaSolicitacoesBid");
+  const timeId = document.getElementById("timeFiltroSolicitacoesBid")?.value || "";
 
-  const { data, error } = await supabaseClient
+  let query = supabaseClient
     .from("bid_solicitacoes")
-    .select("*, jogadores(nome), times(nome)")
+    .select("*, jogadores(nome, idade), times(nome), transferencia:transferencia_id(valor_consultado, tipo_contratacao, dono:time_dono_id(nome))")
     .order("criado_em", { ascending: false });
+
+  if (timeId) query = query.eq("time_id", timeId);
+
+  const { data, error } = await query;
 
   if (error) { lista.innerHTML = `<p class="text-dim">Erro ao carregar solicitações.</p>`; return; }
 
   if (!data || data.length === 0) {
-    lista.innerHTML = `<div class="empty-state"><div class="icon">📋</div><h3>Nenhuma solicitação ainda</h3></div>`;
+    lista.innerHTML = `<div class="empty-state"><div class="icon">📋</div><h3>${timeId ? "Nenhuma solicitação desse time" : "Nenhuma solicitação ainda"}</h3></div>`;
     return;
   }
 
   const statusLabel = { pendente: "⏳ Pendente", aprovado: "✅ Aprovado", recusado: "❌ Recusado" };
+  const tipoLabel = { definitivo: "Definitivo", emprestimo: "Empréstimo" };
 
-  lista.innerHTML = data.map(s => `
+  lista.innerHTML = data.map(s => {
+    const t = s.transferencia;
+    const detalhes = t
+      ? `${t.dono?.nome ? "Origem: " + t.dono.nome + " · " : ""}${t.valor_consultado ? "R$ " + Number(t.valor_consultado).toLocaleString("pt-BR") + " · " : ""}${tipoLabel[t.tipo_contratacao] || ""}${s.jogadores?.idade ? " · " + s.jogadores.idade + " anos" : ""}`
+      : "";
+    return `
     <div class="time-item">
       <div class="info">
         <h3>${s.jogadores?.nome || "Jogador"} <span class="text-dim" style="font-weight:400;">· ${s.times?.nome || ""}</span></h3>
         <p>${statusLabel[s.status] || s.status} ${s.observacao ? "· " + s.observacao : ""}</p>
+        ${detalhes ? `<p class="text-dim" style="font-size:12px;">${detalhes}</p>` : ""}
+        <p class="text-dim" style="font-size:11.5px;">Publicado em ${new Date(s.criado_em).toLocaleString("pt-BR")}</p>
       </div>
       ${s.status === "pendente" ? `
         <div class="flex-gap">
@@ -105,7 +130,8 @@ async function carregarSolicitacoesBidAdmin() {
         </div>
       ` : ""}
     </div>
-  `).join("");
+  `;
+  }).join("");
 }
 
 async function responderSolicitacaoBid(solicitacaoId, jogadorId, aprovar) {
