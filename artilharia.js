@@ -133,7 +133,7 @@ function renderizarRankingJogadores(lista, cfg) {
   }
 
   lista.innerHTML = itens.map((j, i) => `
-    <div class="artilheiro-item" onclick="location.href='jogador.html?id=${j.id}'" style="cursor:pointer;">
+    <div class="artilheiro-item" onclick="location.href='jogador?id=${j.id}'" style="cursor:pointer;">
       <div class="rank">${i + 1}</div>
       <div class="info">
         <h4>${j.nome}</h4>
@@ -163,7 +163,7 @@ function renderizarRankingTimes(lista, cfg) {
   }
 
   lista.innerHTML = itens.map((t, i) => `
-    <div class="artilheiro-item" onclick="location.href='time.html?id=${t.id}'" style="cursor:pointer;">
+    <div class="artilheiro-item" onclick="location.href='time?id=${t.id}'" style="cursor:pointer;">
       <div class="rank">${i + 1}</div>
       <div class="info">
         <h4>${t.nome}</h4>
