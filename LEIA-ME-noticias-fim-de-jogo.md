@@ -64,3 +64,46 @@ Se no futuro você quiser, por exemplo, permitir que o admin **edite**
 manualmente uma notícia de fim de jogo específica (trocar o veículo,
 travar uma manchete, etc.), aí sim valeria criar uma tabela pra
 guardar essas customizações por `jogo_id` — me chama que eu monto.
+
+---
+
+## Atualização: matérias de mercado variando por estatística real
+
+As matérias de **rumor** e **transferência confirmada** deixaram de usar
+sempre o mesmo conjunto de frases. Agora, antes de escolher a manchete
+e o texto, o sistema classifica o jogador num **perfil estatístico**
+(`tmPerfilJogador`, em `mercado-noticias.js`), usando só números reais
+que já existem na tabela `jogadores` — nada de "overall" ou nota
+inventada:
+
+| Perfil | Critério (dados reais do jogador) |
+|---|---|
+| `artilheiro` | 5+ gols na temporada, e gols ≥ assistências |
+| `garcom` | 4+ assistências |
+| `joia` | até 21 anos, com pelo menos 1 gol ou assistência |
+| `veterano` | 33+ anos |
+| `cartoleiro` | 3+ pontos de disciplina (vermelho vale 3, amarelo vale 1) |
+| `goleiro` | posição contém "gol" |
+| `reserva` | 0 gols e 0 assistências |
+| `padrao` | qualquer jogador que não se encaixe nos acima |
+
+Cada perfil tem seu próprio conjunto de manchetes, parágrafos de
+contexto e "aspas" de fonte/dirigente/jogador — um artilheiro vira
+"Reforço de peso: Fulano (8 gols na temporada) é anunciado pelo X",
+um jovem vira "Aposta no futuro: X anuncia a joia Fulano, de 19 anos",
+e assim por diante. A escolha de qual frase usar dentro do perfil
+continua determinística (mesmo jogador/consulta sempre com o mesmo
+texto, não muda a cada F5).
+
+### Arquivos alterados nessa parte
+
+| Arquivo | O que mudou |
+|---|---|
+| `mercado-noticias.js` | Adiciona `tmPerfilJogador` + conjuntos de frases de rumor/confirmada por perfil (`tmFraseRumor` e a nova `tmFraseConfirmada` agora recebem o jogador). Selects passaram a trazer `gols, assistencias, cartoes_amarelos, cartoes_vermelhos, idade, posicao`. |
+| `materia.js` | Parágrafo de contexto e citação da matéria completa também variam por perfil (`MT_PARAGRAFOS_*_POR_PERFIL`, `MT_QUOTES_*_POR_PERFIL`, helper `mtEscolherPorPerfil`). Corrigido para usar os campos reais `cartoes_amarelos`/`cartoes_vermelhos` (o card de estatística do jogador usava `amarelos`/`vermelhos`, que não existem na tabela). |
+| `noticias.js` | Sem mudança nessa parte — já reaproveita `tmAssinaturaHtml`, que não mudou. |
+| `transfermarkt.js` | Os 4 selects de `bid_transferencias` que buscam `jogadores(nome)` para montar os cards de rumor/confirmada do próprio Transfermarkt também passaram a trazer as estatísticas, senão o perfil sempre cairia em "padrao" ali. |
+
+Nenhuma mudança de banco foi necessária aqui — os campos usados já
+existem na tabela `jogadores` (é a mesma tabela que alimenta a aba
+Estatísticas/Artilharia).
