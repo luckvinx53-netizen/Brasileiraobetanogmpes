@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rede Social — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div class="section-title">
+    <h2>Rede Social</h2>
+  </div>
+  <p class="text-dim" style="margin:-6px 0 14px;font-size:13px;">
+    Matchday, escalações, fim de jogo e notas oficiais dos clubes desta competição.
+  </p>
+
+  <div id="listaFeed">
+    <div class="skeleton" style="height:280px;margin-bottom:14px;"></div>
+    <div class="skeleton" style="height:280px;"></div>
+  </div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="posts-rede-social.js"></script>
+<script src="feed.js"></script>
+
+</body>
+</html>

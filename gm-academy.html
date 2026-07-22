@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GM Academy — Brasileirão Betano</title>
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="gm-academy.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+
+  <!-- ===================== TELA: CARREGANDO (estado inicial, enquanto verifica sessão) ===================== -->
+  <div id="gmTelaCarregando" class="gm-hero">
+    <div class="gm-hero-icone">🎓</div>
+    <p class="text-dim">Verificando sua sessão...</p>
+  </div>
+
+  <!-- ===================== TELA: ESCOLHA (login ou cadastro) ===================== -->
+  <div id="gmTelaEscolha" class="hidden gm-hero">
+    <div class="gm-hero-icone">🎓</div>
+    <h1>GM Academy</h1>
+    <p class="text-dim">Crie seu perfil de técnico, escolha sua tática favorita e fique disponível para receber propostas de clubes do Brasileirão.</p>
+
+    <div class="gm-hero-botoes">
+      <button class="btn btn-primary btn-block" onclick="gmMostrarTela('cadastro')">Criar meu perfil de técnico</button>
+      <button class="btn btn-secondary btn-block" onclick="gmMostrarTela('login')">Já tenho conta — entrar</button>
+    </div>
+  </div>
+
+  <!-- ===================== TELA: CADASTRO ===================== -->
+  <div id="gmTelaCadastro" class="hidden">
+    <div class="section-title">
+      <h2>Criar perfil de técnico</h2>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>Seu nome</label>
+        <input type="text" id="gmCadastroNome" placeholder="Como você quer ser chamado">
+      </div>
+
+      <div class="field">
+        <label>Tática favorita</label>
+        <select id="gmCadastroTatica">
+          <option value="4-3-3">4-3-3</option>
+          <option value="4-4-2">4-4-2</option>
+          <option value="3-5-2">3-5-2</option>
+          <option value="4-2-3-1">4-2-3-1</option>
+          <option value="3-4-3">3-4-3</option>
+          <option value="5-3-2">5-3-2</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="gmCadastroEmail" placeholder="voce@exemplo.com">
+      </div>
+
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="gmCadastroSenha" placeholder="Mínimo 6 caracteres">
+      </div>
+
+      <button class="btn btn-primary btn-block" id="gmBtnCadastrar" onclick="gmCriarPerfil()">Criar perfil e ficar disponível</button>
+      <button class="btn btn-ghost btn-block" onclick="gmMostrarTela('escolha')">Voltar</button>
+    </div>
+  </div>
+
+  <!-- ===================== TELA: LOGIN ===================== -->
+  <div id="gmTelaLogin" class="hidden">
+    <div class="section-title">
+      <h2>Entrar</h2>
+    </div>
+
+    <div class="card">
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="gmLoginEmail" placeholder="voce@exemplo.com">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="gmLoginSenha" placeholder="••••••••">
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="gmFazerLogin()">Entrar</button>
+      <button class="btn btn-ghost btn-block" onclick="gmMostrarTela('escolha')">Voltar</button>
+    </div>
+  </div>
+
+  <!-- ===================== TELA: LICENCIADO (logado, sem clube) ===================== -->
+  <div id="gmTelaLicenciado" class="hidden">
+    <div class="gm-perfil-card">
+      <div class="gm-perfil-icone">🧑‍💼</div>
+      <div>
+        <h2 id="gmNomeTecnico">Técnico</h2>
+        <p class="text-dim">Licenciado · tática favorita: <span id="gmTaticaTecnico">—</span></p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="gmSair()" style="margin-left:auto;">Sair</button>
+    </div>
+
+    <div class="empty-state" style="margin-top:16px;">
+      <div class="icon">📋</div>
+      <h3>Você está licenciado</h3>
+      <p>Fique de olho — quando um clube ficar sem técnico, o administrador pode te enviar uma proposta. Elas aparecem aqui embaixo.</p>
+    </div>
+
+    <div class="section-title" style="margin-top:20px;">
+      <h2>Propostas recebidas</h2>
+    </div>
+    <div class="list" id="gmListaPropostas">
+      <div class="skeleton" style="height:90px;"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TELA: CONTRATADO (logado, já em um clube) ===================== -->
+  <div id="gmTelaContratado" class="hidden">
+    <div class="gm-perfil-card">
+      <div class="gm-perfil-icone">🛡️</div>
+      <div>
+        <h2 id="gmNomeTecnicoContratado">Técnico</h2>
+        <p class="text-dim">Técnico do <span id="gmNomeTimeContratado">—</span></p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="gmSair()" style="margin-left:auto;">Sair</button>
+    </div>
+
+    <div class="empty-state" style="margin-top:16px;">
+      <div class="icon">✅</div>
+      <h3>Você já está em um clube</h3>
+      <p>A área de escalação, elenco e BID do seu time fica em "Meu Time".</p>
+    </div>
+
+    <button class="btn btn-primary btn-block" style="margin-top:16px;" onclick="location.href='meu-time'">Ir para Meu Time</button>
+  </div>
+
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="gm-academy.js"></script>
+
+</body>
+</html>

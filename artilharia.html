@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Estatísticas — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div class="section-title">
+    <h2>Estatísticas</h2>
+  </div>
+
+  <div class="tabs-row" id="tabsEstatisticas">
+    <button class="tab-btn active" data-stat="gols" onclick="mudarStat('gols', this)">Gols</button>
+    <button class="tab-btn" data-stat="assistencias" onclick="mudarStat('assistencias', this)">Assistências</button>
+    <button class="tab-btn" data-stat="cartoes_amarelos" onclick="mudarStat('cartoes_amarelos', this)">Cartões Amarelos</button>
+    <button class="tab-btn" data-stat="cartoes_vermelhos" onclick="mudarStat('cartoes_vermelhos', this)">Cartões Vermelhos</button>
+    <button class="tab-btn" data-stat="melhor_ataque" onclick="mudarStat('melhor_ataque', this)">Melhor Ataque</button>
+    <button class="tab-btn" data-stat="melhor_defesa" onclick="mudarStat('melhor_defesa', this)">Melhor Defesa</button>
+  </div>
+
+  <div class="list" id="listaArtilharia">
+    <div class="skeleton" style="height:60px;"></div>
+    <div class="skeleton" style="height:60px;"></div>
+    <div class="skeleton" style="height:60px;"></div>
+  </div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="artilharia.js"></script>
+
+</body>
+</html>
