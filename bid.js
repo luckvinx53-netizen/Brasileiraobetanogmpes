@@ -3,7 +3,11 @@
 // (mapa de cores por time + checagem da janela de transferências)
 // =========================================================
 
-// Mapa fixo de cores por nome de time. Adicione mais conforme precisar.
+// Mapa fixo de cores por nome de time. Chaves em minúsculas, SEM
+// acentos e SEM hífen (normalizadas por obterTemaTime abaixo) — assim
+// "São Paulo", "RB-Bragantino" e "Atlético-MG" batem certinho com os
+// nomes reais salvos no banco, que vêm com acento e hífen.
+// Adicione mais conforme precisar.
 // "primaria" e "secundaria" viram variáveis CSS aplicadas na página do time.
 const TEMAS_TIME = {
   "flamengo":   { primaria: "#E30613", secundaria: "#000000" },
@@ -16,25 +20,47 @@ const TEMAS_TIME = {
   "gremio":     { primaria: "#0090D4", secundaria: "#000000" },
   "internacional": { primaria: "#D50032", secundaria: "#FFFFFF" },
   "atletico mineiro": { primaria: "#000000", secundaria: "#FFFFFF" },
-  "atletico-mg": { primaria: "#000000", secundaria: "#FFFFFF" },
+  "atletico mg": { primaria: "#000000", secundaria: "#FFFFFF" },
   "cruzeiro":   { primaria: "#003DA5", secundaria: "#FFFFFF" },
   "botafogo":   { primaria: "#000000", secundaria: "#FFFFFF" },
   "fluminense": { primaria: "#870018", secundaria: "#005C36" },
   "vitoria":    { primaria: "#D50032", secundaria: "#000000" },
   "bragantino":     { primaria: "#FFFFFF", secundaria: "#000000" },
   "red bull bragantino": { primaria: "#FFFFFF", secundaria: "#000000" },
+  "rb bragantino": { primaria: "#FFFFFF", secundaria: "#000000" },
   "fortaleza":  { primaria: "#0033A0", secundaria: "#D50032" },
   "ceara":      { primaria: "#000000", secundaria: "#FFFFFF" },
   "sport":      { primaria: "#D50032", secundaria: "#000000" },
   "mirassol":   { primaria: "#FFD400", secundaria: "#006633" },
   "juventude":  { primaria: "#009444", secundaria: "#FFFFFF" },
+  // Adicionados: times que estavam sem cor por não existirem no mapa.
+  "athletico pr": { primaria: "#CE181E", secundaria: "#000000" },
+  "athletico paranaense": { primaria: "#CE181E", secundaria: "#000000" },
+  "chapecoense": { primaria: "#1B552A", secundaria: "#FFFFFF" },
+  "coritiba":    { primaria: "#046A38", secundaria: "#FFFFFF" },
+  "remo":        { primaria: "#002E6D", secundaria: "#FFFFFF" },
 };
 
 // Tema padrão para times sem mapa definido
 const TEMA_PADRAO = { primaria: "#22C55E", secundaria: "#0A0A0A" };
 
+// Normaliza o nome do time pra bater com as chaves de TEMAS_TIME:
+// minúsculas, sem acentos (São → sao) e com hífen/underscore virando
+// espaço (Athletico-PR → athletico pr). Sem isso, nomes como "São
+// Paulo" (com acento) ou "RB-Bragantino" (com hífen) não batiam com
+// as chaves "sao paulo"/"rb bragantino" e caíam no tema padrão verde,
+// fazendo o time perder a cor própria.
+function normalizarNomeTime(nome) {
+  return (nome || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD").replace(/[\u0300-\u036f]/g, "") // remove acentos
+    .replace(/[-_]/g, " ")                              // hífen/underscore → espaço
+    .replace(/\s+/g, " ");                              // espaços duplicados → um só
+}
+
 function obterTemaTime(nomeTime) {
-  const chave = (nomeTime || "").trim().toLowerCase();
+  const chave = normalizarNomeTime(nomeTime);
   return TEMAS_TIME[chave] || TEMA_PADRAO;
 }
 
