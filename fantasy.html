@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fantasy — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Estilos específicos do Fantasy — mantidos aqui em vez de style.css
+     pra não inchar a folha global com regras usadas só nesta página. */
+  .fant-tabs { display:flex; gap:8px; margin:14px 0; overflow-x:auto; }
+  .fant-tab {
+    padding:8px 16px; border-radius:999px; border:1px solid var(--borda,#2a2f3a);
+    background:var(--bg-elev-1,#161a22); color:var(--texto-dim,#9aa3b2);
+    font-family:var(--font-display); font-size:14px; white-space:nowrap; cursor:pointer;
+  }
+  .fant-tab.ativa { background:var(--tema-primaria); color:#0a0a0a; border-color:var(--tema-primaria); font-weight:700; }
+  .fant-orcamento { display:flex; justify-content:space-between; align-items:center; padding:14px; border-radius:12px; background:var(--bg-elev-1,#161a22); border:1px solid var(--borda,#2a2f3a); margin-bottom:14px; }
+  .fant-orcamento .num { font-family:var(--font-display); font-size:20px; font-weight:700; }
+  .fant-orcamento .num.negativo { color:#ef4444; }
+  .fant-jogador-linha {
+    display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px;
+    background:var(--bg-elev-1,#161a22); border:1px solid var(--borda,#2a2f3a); margin-bottom:8px;
+  }
+  .fant-jogador-linha .foto { width:42px; height:42px; border-radius:50%; object-fit:cover; background:#222; flex-shrink:0; }
+  .fant-jogador-linha .foto-placeholder { width:42px; height:42px; border-radius:50%; background:#2a2f3a; display:flex; align-items:center; justify-content:center; font-size:12px; color:#9aa3b2; flex-shrink:0; }
+  .fant-jogador-info { flex:1; min-width:0; }
+  .fant-jogador-info .nome { font-weight:600; font-size:14px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .fant-jogador-info .meta { font-size:12px; color:var(--texto-dim,#9aa3b2); }
+  .fant-jogador-preco { font-family:var(--font-display); font-size:14px; font-weight:700; color:var(--tema-primaria); white-space:nowrap; }
+  .fant-btn-capitao { border:1px solid var(--tema-primaria); background:transparent; color:var(--tema-primaria); border-radius:8px; padding:4px 8px; font-size:11px; cursor:pointer; }
+  .fant-btn-capitao.ativo { background:var(--tema-primaria); color:#0a0a0a; font-weight:700; }
+  .fant-btn-remover { border:none; background:transparent; color:#ef4444; font-size:18px; cursor:pointer; padding:0 6px; }
+  .fant-btn-add { border:1px solid var(--tema-primaria); background:transparent; color:var(--tema-primaria); border-radius:8px; padding:6px 12px; font-size:12px; cursor:pointer; white-space:nowrap; }
+  .fant-btn-add:disabled { opacity:0.4; cursor:not-allowed; }
+  .fant-filtro-pos { display:flex; gap:6px; margin-bottom:10px; overflow-x:auto; }
+  .fant-filtro-pos button { padding:6px 12px; border-radius:8px; border:1px solid var(--borda,#2a2f3a); background:transparent; color:var(--texto-dim,#9aa3b2); font-size:12px; white-space:nowrap; cursor:pointer; }
+  .fant-filtro-pos button.ativo { background:var(--tema-primaria); color:#0a0a0a; border-color:var(--tema-primaria); font-weight:700; }
+  .fant-ranking-linha { display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:12px; background:var(--bg-elev-1,#161a22); border:1px solid var(--borda,#2a2f3a); margin-bottom:8px; }
+  .fant-ranking-pos { font-family:var(--font-display); font-size:18px; font-weight:700; width:28px; text-align:center; color:var(--tema-primaria); }
+  .fant-ranking-info { flex:1; min-width:0; }
+  .fant-ranking-info .nome-time { font-weight:600; font-size:14px; }
+  .fant-ranking-pontos { font-family:var(--font-display); font-size:16px; font-weight:700; }
+  .hidden { display:none !important; }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div class="section-title">
+    <h2>Fantasy — Meu Cartola</h2>
+  </div>
+  <p class="text-dim" style="margin:-6px 0 14px;font-size:13px;">
+    Monte seu time dos sonhos com craques de vários clubes e pontue com base no que rola de verdade no Brasileirão.
+  </p>
+
+  <!-- Tela: carregando -->
+  <div id="fantTelaCarregando">
+    <div class="skeleton" style="height:180px;margin-bottom:14px;"></div>
+  </div>
+
+  <!-- Tela: login/cadastro (visitante não logado) -->
+  <div id="fantTelaLogin" class="hidden">
+    <div class="card" style="padding:18px;">
+      <h3 style="margin-top:0;">Entrar no Fantasy</h3>
+      <p class="text-dim" style="font-size:13px;">Use a mesma conta do GM Academy, se já tiver uma — ou crie uma nova aqui.</p>
+
+      <div id="fantLoginCampos">
+        <input id="fantLoginEmail" type="email" placeholder="E-mail" style="width:100%;margin-bottom:8px;">
+        <input id="fantLoginSenha" type="password" placeholder="Senha" style="width:100%;margin-bottom:12px;">
+        <button class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="fantFazerLogin()">Entrar</button>
+        <button class="btn btn-secondary btn-block" onclick="fantMostrarCadastro()">Criar conta nova</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tela: cadastro -->
+  <div id="fantTelaCadastro" class="hidden">
+    <div class="card" style="padding:18px;">
+      <h3 style="margin-top:0;">Criar conta</h3>
+      <input id="fantCadastroNome" type="text" placeholder="Seu nome" style="width:100%;margin-bottom:8px;">
+      <input id="fantCadastroEmail" type="email" placeholder="E-mail" style="width:100%;margin-bottom:8px;">
+      <input id="fantCadastroSenha" type="password" placeholder="Senha (mín. 6 caracteres)" style="width:100%;margin-bottom:12px;">
+      <button id="fantBtnCadastrar" class="btn btn-primary btn-block" style="margin-bottom:8px;" onclick="fantCriarConta()">Criar conta</button>
+      <button class="btn btn-secondary btn-block" onclick="fantMostrarTela('login')">Já tenho conta</button>
+    </div>
+  </div>
+
+  <!-- Tela: principal (logado) -->
+  <div id="fantTelaPrincipal" class="hidden">
+    <div class="fant-tabs">
+      <button class="fant-tab ativa" data-tab="escalacao" onclick="fantTrocarAba('escalacao')">Minha Escalação</button>
+      <button class="fant-tab" data-tab="mercado" onclick="fantTrocarAba('mercado')">Mercado</button>
+      <button class="fant-tab" data-tab="ranking" onclick="fantTrocarAba('ranking')">Ranking</button>
+    </div>
+
+    <!-- Aba: escalação -->
+    <div id="fantAbaEscalacao">
+      <div class="fant-orcamento">
+        <div>
+          <div class="text-dim" style="font-size:12px;">Orçamento disponível</div>
+          <div class="num" id="fantOrcamentoDisponivel">R$ 0</div>
+        </div>
+        <div style="text-align:right;">
+          <div class="text-dim" style="font-size:12px;">Rodada</div>
+          <div class="num" id="fantRodadaAtual" style="font-size:16px;">—</div>
+        </div>
+      </div>
+
+      <div id="fantListaEscalados"></div>
+      <p id="fantEscalacaoVazia" class="text-dim hidden" style="text-align:center;padding:20px;font-size:13px;">
+        Você ainda não escalou ninguém nesta rodada. Vá até o Mercado e monte seu time!
+      </p>
+    </div>
+
+    <!-- Aba: mercado -->
+    <div id="fantAbaMercado" class="hidden">
+      <div class="fant-filtro-pos" id="fantFiltroPosicao"></div>
+      <input id="fantBuscaJogador" type="text" placeholder="Buscar jogador ou time..." style="width:100%;margin-bottom:10px;" oninput="fantFiltrarMercado()">
+      <div id="fantListaMercado"></div>
+    </div>
+
+    <!-- Aba: ranking -->
+    <div id="fantAbaRanking" class="hidden">
+      <div id="fantListaRanking"></div>
+    </div>
+  </div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="fantasy.js"></script>
+<script src="fantasy-ui.js"></script>
+
+</body>
+</html>
