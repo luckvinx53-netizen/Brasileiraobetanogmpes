@@ -247,11 +247,11 @@ async function calcularPlacarPorEventosCompartilhado(jogo) {
   return { pc, pf };
 }
 
-// Desfaz nas estatísticas dos jogadores (gols, assistências, cartões)
-// tudo o que os eventos_jogo de um jogo geraram. Usada ao descomputar
-// um jogo, pra que a artilharia/estatísticas voltem a ficar corretas
-// e batam com o placar e os eventos, permitindo editar tudo de novo
-// sem duplicar contagem quando o jogo for recomputado.
+// Desfaz nas estatísticas dos jogadores (gols, assistências, cartões,
+// valor de mercado) tudo o que os eventos_jogo de um jogo geraram. Usada
+// ao descomputar um jogo, pra que a artilharia/estatísticas voltem a
+// ficar corretas e batam com o placar e os eventos, permitindo editar
+// tudo de novo sem duplicar contagem quando o jogo for recomputado.
 async function desfazerEstatisticasEventosDoJogo(jogoId) {
   const { data: eventos, error } = await supabaseClient
     .from("eventos_jogo")
@@ -292,6 +292,26 @@ async function desfazerEstatisticasEventosDoJogo(jogoId) {
     if (e.tipo === "Cartão Vermelho" && e.jogador_id && mapaJogadores[e.jogador_id]) {
       mapaJogadores[e.jogador_id].cartoes_vermelhos = Math.max((mapaJogadores[e.jogador_id].cartoes_vermelhos || 0) - 1, 0);
     }
+    // Reverte o valor de mercado do artilheiro dividindo pelo MESMO fator
+    // que foi aplicado quando o evento foi computado (guardado em
+    // fator_valorizacao_gol). Fator fixo de gol (1.03), então não
+    // precisaria ser salvo, mas usamos o valor salvo mesmo assim por
+    // consistência e para não depender de constantes duplicadas.
+    if ((e.tipo === "Gol" || e.tipo === "Pênalti Marcado") && e.jogador_id
+        && e.fator_valorizacao_gol && mapaJogadores[e.jogador_id]) {
+      const atual = Number(mapaJogadores[e.jogador_id].valor_mercado) || 0;
+      mapaJogadores[e.jogador_id].valor_mercado = Math.round(atual / Number(e.fator_valorizacao_gol));
+    }
+    // Reverte o valor de mercado de quem deu a assistência. O fator é
+    // SORTEADO a cada evento (entre 1% e 1,25%), então só dá pra
+    // reverter usando o valor exato que foi salvo em
+    // fator_valorizacao_assistencia no momento em que o evento foi
+    // computado — não dá pra recalcular.
+    if (e.tipo === "Gol" && e.jogador_secundario_id
+        && e.fator_valorizacao_assistencia && mapaJogadores[e.jogador_secundario_id]) {
+      const atual = Number(mapaJogadores[e.jogador_secundario_id].valor_mercado) || 0;
+      mapaJogadores[e.jogador_secundario_id].valor_mercado = Math.round(atual / Number(e.fator_valorizacao_assistencia));
+    }
   });
 
   for (const jogadorId of Object.keys(mapaJogadores)) {
@@ -303,6 +323,7 @@ async function desfazerEstatisticasEventosDoJogo(jogoId) {
         assistencias: j.assistencias || 0,
         cartoes_amarelos: j.cartoes_amarelos || 0,
         cartoes_vermelhos: j.cartoes_vermelhos || 0,
+        valor_mercado: j.valor_mercado || 0,
       })
       .eq("id", jogadorId);
     if (erroUpdate) return { ok: false, error: erroUpdate };
@@ -311,11 +332,30 @@ async function desfazerEstatisticasEventosDoJogo(jogoId) {
   return { ok: true };
 }
 
-// Reaplica nas estatísticas dos jogadores (gols, assistências, cartões)
-// tudo o que os eventos_jogo de um jogo já lançados representam.
-// Espelho de desfazerEstatisticasEventosDoJogo, usada ao encerrar/
-// recomputar um jogo que foi descomputado antes (pra não perder os
-// gols/cartões que tinham sido zerados no jogador ao descomputar).
+// Sorteia o fator de valorização de uma assistência: entre +1% e +1,25%
+// (1.01 a 1.0125), diferente a cada evento.
+function sortearFatorValorizacaoAssistencia() {
+  const percentual = 0.01 + Math.random() * 0.0025; // 0.01 a 0.0125
+  return 1 + percentual;
+}
+
+// Fator fixo de valorização por gol: +3%.
+const FATOR_VALORIZACAO_GOL = 1.03;
+
+// Reaplica nas estatísticas dos jogadores (gols, assistências, cartões,
+// valor de mercado) tudo o que os eventos_jogo de um jogo já lançados
+// representam. Espelho de desfazerEstatisticasEventosDoJogo, usada ao
+// encerrar/recomputar um jogo que foi descomputado antes (pra não perder
+// os gols/cartões que tinham sido zerados no jogador ao descomputar).
+//
+// Valor de mercado: cada evento de Gol/Pênalti Marcado sobe o valor do
+// artilheiro em +3%; cada Gol com assistência também sobe o valor de
+// quem deu a assistência entre +1% e +1,25% (sorteado). O fator exato
+// usado é salvo em eventos_jogo (fator_valorizacao_gol/assistencia) pra
+// permitir reverter com exatidão se o jogo for descomputado depois —
+// eventos que já tinham um fator salvo (recomputação) reusam o mesmo
+// fator em vez de sortear de novo, pra não gerar valores diferentes a
+// cada vez que o mesmo jogo é computado/descomputado.
 async function reaplicarEstatisticasEventosDoJogo(jogoId) {
   const { data: eventos, error } = await supabaseClient
     .from("eventos_jogo")
@@ -343,12 +383,31 @@ async function reaplicarEstatisticasEventosDoJogo(jogoId) {
 
   const mapaJogadores = Object.fromEntries((jogadoresEnvolvidos || []).map(j => [j.id, { ...j }]));
 
+  // Eventos que ganharem um fator novo (1ª vez sendo computados) precisam
+  // ser salvos de volta em eventos_jogo — acumulamos aqui pra fazer isso
+  // depois de calcular tudo.
+  const atualizacoesEventos = [];
+
   (eventos || []).forEach(e => {
     if ((e.tipo === "Gol" || e.tipo === "Pênalti Marcado") && e.jogador_id && mapaJogadores[e.jogador_id]) {
       mapaJogadores[e.jogador_id].gols = (mapaJogadores[e.jogador_id].gols || 0) + 1;
+
+      const fatorGol = e.fator_valorizacao_gol || FATOR_VALORIZACAO_GOL;
+      const atual = Number(mapaJogadores[e.jogador_id].valor_mercado) || 0;
+      mapaJogadores[e.jogador_id].valor_mercado = Math.round(atual * fatorGol);
+      if (!e.fator_valorizacao_gol) atualizacoesEventos.push({ id: e.id, fator_valorizacao_gol: fatorGol });
     }
     if (e.tipo === "Gol" && e.jogador_secundario_id && mapaJogadores[e.jogador_secundario_id]) {
       mapaJogadores[e.jogador_secundario_id].assistencias = (mapaJogadores[e.jogador_secundario_id].assistencias || 0) + 1;
+
+      const fatorAssist = e.fator_valorizacao_assistencia || sortearFatorValorizacaoAssistencia();
+      const atualAssist = Number(mapaJogadores[e.jogador_secundario_id].valor_mercado) || 0;
+      mapaJogadores[e.jogador_secundario_id].valor_mercado = Math.round(atualAssist * fatorAssist);
+      if (!e.fator_valorizacao_assistencia) {
+        const jaTemAtualizacao = atualizacoesEventos.find(a => a.id === e.id);
+        if (jaTemAtualizacao) jaTemAtualizacao.fator_valorizacao_assistencia = fatorAssist;
+        else atualizacoesEventos.push({ id: e.id, fator_valorizacao_assistencia: fatorAssist });
+      }
     }
     if (e.tipo === "Cartão Amarelo" && e.jogador_id && mapaJogadores[e.jogador_id]) {
       mapaJogadores[e.jogador_id].cartoes_amarelos = (mapaJogadores[e.jogador_id].cartoes_amarelos || 0) + 1;
@@ -367,9 +426,21 @@ async function reaplicarEstatisticasEventosDoJogo(jogoId) {
         assistencias: j.assistencias || 0,
         cartoes_amarelos: j.cartoes_amarelos || 0,
         cartoes_vermelhos: j.cartoes_vermelhos || 0,
+        valor_mercado: j.valor_mercado || 0,
       })
       .eq("id", jogadorId);
     if (erroUpdate) return { ok: false, error: erroUpdate };
+  }
+
+  // Salva os fatores sorteados/usados de volta nos eventos, pra que uma
+  // futura reversão (descomputar) use o valor exato aplicado agora.
+  for (const upd of atualizacoesEventos) {
+    const { id, ...campos } = upd;
+    const { error: erroEvento } = await supabaseClient
+      .from("eventos_jogo")
+      .update(campos)
+      .eq("id", id);
+    if (erroEvento) return { ok: false, error: erroEvento };
   }
 
   return { ok: true };

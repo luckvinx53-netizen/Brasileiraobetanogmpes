@@ -61,6 +61,22 @@ async function carregarJogador() {
     <div class="stat-card"><div class="num">${jogador.vermelhos || 0}</div><div class="label">Vermelhos</div></div>
   `;
 
+  // Valor de mercado: sobe automaticamente ao computar jogo (+3% por
+  // gol, +1% a +1,25% por assistência — ver reaplicarEstatisticasEventosDoJogo
+  // em utils.js). Exibido como card de destaque, separado da stat-grid
+  // porque é dinheiro, não uma contagem de evento.
+  const valorMercadoCard = document.getElementById("cardValorMercadoJogador");
+  if (valorMercadoCard) {
+    valorMercadoCard.innerHTML = `
+      <div class="card" style="text-align:center;padding:14px;">
+        <div class="text-dim" style="font-size:12px;">Valor de mercado</div>
+        <div style="font-family:var(--font-display);font-size:24px;font-weight:700;color:var(--tema-primaria);">
+          R$ ${Number(jogador.valor_mercado || 0).toLocaleString("pt-BR")}
+        </div>
+      </div>
+    `;
+  }
+
   await carregarHistoricoTransferenciasJogador(id, listaHistorico);
   await carregarRumoresJogador(id, listaRumores);
 }
