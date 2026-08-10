@@ -38,6 +38,10 @@
 
   --shadow: 0 8px 30px rgba(0,0,0,.35);
 
+  /* --tema-primaria/--tema-secundaria são o resultado FINAL consolidado
+     por sincronizarTemaVisual() (ver competicoes.js), com prioridade
+     time > competição > este default. Não escrever direto nelas a
+     partir de JS novo — usar --tema-time-* ou --tema-competicao-*. */
   --tema-primaria: #3ddc84;
   --tema-secundaria: #12161d;
 }

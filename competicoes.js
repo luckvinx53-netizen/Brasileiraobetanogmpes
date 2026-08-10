@@ -54,20 +54,44 @@ function selecionarCompeticao(slug) {
   window.location.reload();
 }
 
-// Aplica a cor da competição atual nas variáveis --tema-primaria /
-// --tema-secundaria (mesmo padrão usado em bid.js para times), e
-// também espelha em --grama/--grama-dim/--grama-bg, que é a variável
-// usada na maior parte do design system hoje (botões, links, ícones).
+// Aplica a cor da competição atual. Usa variáveis próprias
+// (--tema-competicao-primaria/secundaria) em vez de escrever direto em
+// --tema-primaria/--tema-secundaria, porque essas últimas também são
+// usadas pelo tema de cor do TIME (ver bid.js:aplicarTemaTime). Como
+// esta função roda de forma assíncrona dentro de montarLayout() e pode
+// terminar depois de aplicarTemaTime(), escrever direto nelas causava
+// a competição sobrescrever/apagar a identidade visual do time (ex:
+// Bahia perdendo azul/vermelho e ficando com a cor do Brasileirão).
+// Quem decide a prioridade final é sincronizarTemaVisual(), abaixo.
 function aplicarTemaCompeticao(competicao) {
   if (!competicao) return;
   const raiz = document.documentElement.style;
 
-  raiz.setProperty("--tema-primaria", competicao.cor_primaria);
-  raiz.setProperty("--tema-secundaria", competicao.cor_secundaria);
+  raiz.setProperty("--tema-competicao-primaria", competicao.cor_primaria);
+  raiz.setProperty("--tema-competicao-secundaria", competicao.cor_secundaria);
 
   raiz.setProperty("--grama", competicao.cor_primaria);
   raiz.setProperty("--grama-dim", sombrearCor(competicao.cor_primaria, 0.25));
   raiz.setProperty("--grama-bg", hexParaRgba(competicao.cor_primaria, 0.12));
+
+  sincronizarTemaVisual();
+}
+
+// Decide, a cada mudança, quais cores realmente valem para
+// --tema-primaria/--tema-secundaria (as variáveis que o CSS lê).
+// Prioridade: tema do TIME (quando a página aplicou um, via
+// aplicarTemaTime) > tema da COMPETIÇÃO > default do style.css.
+// Chamada tanto daqui quanto de aplicarTemaTime, então não importa
+// qual das duas terminar de carregar primeiro — o time sempre vence.
+function sincronizarTemaVisual() {
+  const raiz = document.documentElement.style;
+  const temaTimePrimaria = raiz.getPropertyValue("--tema-time-primaria").trim();
+  const temaTimeSecundaria = raiz.getPropertyValue("--tema-time-secundaria").trim();
+  const temaCompPrimaria = raiz.getPropertyValue("--tema-competicao-primaria").trim();
+  const temaCompSecundaria = raiz.getPropertyValue("--tema-competicao-secundaria").trim();
+
+  raiz.setProperty("--tema-primaria", temaTimePrimaria || temaCompPrimaria || "");
+  raiz.setProperty("--tema-secundaria", temaTimeSecundaria || temaCompSecundaria || "");
 }
 
 // Escurece um hex em `fator` (0-1) — usado pra derivar a variante "dim"

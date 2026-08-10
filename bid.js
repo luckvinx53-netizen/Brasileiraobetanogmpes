@@ -38,11 +38,25 @@ function obterTemaTime(nomeTime) {
   return TEMAS_TIME[chave] || TEMA_PADRAO;
 }
 
-// Aplica as cores do time como variáveis CSS no elemento raiz da página
+// Aplica as cores do time como variáveis CSS no elemento raiz da página.
+// Escreve em --tema-time-primaria/secundaria (não direto em
+// --tema-primaria/secundaria) porque o seletor de competição
+// (competicoes.js) também usa esse mesmo par de variáveis para o tema
+// do Brasileirão/outras competições, e roda de forma assíncrona — sem
+// essa separação, quem terminasse de carregar por último apagava a cor
+// do outro. sincronizarTemaVisual() decide a prioridade final (time > 
+// competição > default) toda vez que uma das duas fontes muda.
 function aplicarTemaTime(nomeTime) {
   const tema = obterTemaTime(nomeTime);
-  document.documentElement.style.setProperty("--tema-primaria", tema.primaria);
-  document.documentElement.style.setProperty("--tema-secundaria", tema.secundaria);
+  document.documentElement.style.setProperty("--tema-time-primaria", tema.primaria);
+  document.documentElement.style.setProperty("--tema-time-secundaria", tema.secundaria);
+  if (typeof sincronizarTemaVisual === "function") {
+    sincronizarTemaVisual();
+  } else {
+    // Fallback caso competicoes.js não tenha sido carregado nesta página
+    document.documentElement.style.setProperty("--tema-primaria", tema.primaria);
+    document.documentElement.style.setProperty("--tema-secundaria", tema.secundaria);
+  }
 }
 
 // ---------------------------------------------------------
