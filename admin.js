@@ -109,7 +109,7 @@ function mostrarConteudoAdmin() {
 // ---------- ABAS ----------
 
 function abrirAba(id, btn) {
-  ["abaJogos", "abaTimes", "abaJogadores", "abaNoticias", "abaTecnicos", "abaBid", "abaRedeSocial"].forEach(a => {
+  ["abaJogos", "abaTimes", "abaJogadores", "abaNoticias", "abaTecnicos", "abaBid", "abaRedeSocial", "abaTemporadas"].forEach(a => {
     document.getElementById(a).classList.add("hidden");
   });
   document.getElementById(id).classList.remove("hidden");
@@ -134,6 +134,11 @@ function abrirAba(id, btn) {
 
   if (id === "abaRedeSocial" && typeof carregarRedeSocialAdmin === "function") {
     carregarRedeSocialAdmin();
+  }
+
+  if (id === "abaTemporadas" && typeof carregarTemporadasAdmin === "function") {
+    carregarTemporadasAdmin();
+    montarFormularioNovaTemporada();
   }
 }
 

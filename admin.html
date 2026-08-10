@@ -73,6 +73,7 @@
       <button class="tab-btn" onclick="abrirAba('abaTecnicos', this)">Técnicos</button>
       <button class="tab-btn" onclick="abrirAba('abaBid', this)">BID</button>
       <button class="tab-btn" onclick="abrirAba('abaRedeSocial', this)">Rede Social</button>
+      <button class="tab-btn" onclick="abrirAba('abaTemporadas', this)">Temporadas</button>
     </div>
 
     <!-- ABA JOGOS -->
@@ -618,6 +619,39 @@
       </div>
     </div>
 
+    <!-- ABA TEMPORADAS -->
+    <div id="abaTemporadas" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;" id="tituloAbaTemporadas">Temporadas</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Temporadas da competição atualmente selecionada no seletor do topbar. Só uma
+          fica ativa por vez — o site inteiro (times, jogos, tabela) segue a ativa.
+        </p>
+        <div id="listaTemporadasAdmin"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">+ Nova temporada</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Cria uma temporada nova e a ativa. A temporada atual fica arquivada, mas
+          <strong>seus dados (times, jogos) permanecem intactos</strong> no banco.
+        </p>
+        <div id="camposNovaTemporadaAdmin"></div>
+        <button class="btn btn-primary btn-block" onclick="criarNovaTemporadaAdmin()">Criar e ativar</button>
+      </div>
+
+      <div class="card" style="border-color:var(--vermelho);">
+        <h3 style="margin-top:0;color:var(--vermelho);">⚠️ Zerar temporada atual</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Apaga <strong>permanentemente</strong> todos os times, jogos, escalações e
+          posts da temporada atual desta competição, e cria uma temporada nova e vazia no
+          lugar. Use para começar uma competição do zero. Esta ação não pode ser desfeita.
+        </p>
+        <button class="btn btn-danger btn-block" onclick="confirmarZerarTemporadaAdmin()">Zerar temporada e começar do zero</button>
+      </div>
+    </div>
+
   </main>
 
   <div id="bottomnav-slot"></div>
@@ -633,6 +667,7 @@
 <script src="tecnicos-admin.js"></script>
 <script src="bid-admin.js"></script>
 <script src="rede-social-admin.js"></script>
+<script src="temporadas-admin.js"></script>
 <script src="admin.js"></script>
 
 </body>
