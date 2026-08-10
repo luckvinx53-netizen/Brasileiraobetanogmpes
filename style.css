@@ -2177,3 +2177,138 @@ body.tema-time .section-title h2{
   font-size: 12.5px;
   color: var(--text-dim);
 }
+
+/* ===== COPA DO BRASIL — MATA-MATA (admin) ===== */
+.cdb-toolbar{
+  display:flex;
+  justify-content:flex-end;
+  margin-bottom:14px;
+}
+.cdb-fase-card{
+  margin-bottom:16px;
+}
+.cdb-fase-card h3{
+  margin-top:0;
+  margin-bottom:12px;
+  font-family: var(--font-display);
+  font-size: 20px;
+}
+.cdb-confrontos-grid{
+  display:grid;
+  gap:12px;
+}
+.cdb-confronto-card{
+  background: var(--bg-elev-2);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+}
+.cdb-confronto-card.cdb-definido{
+  border-color: var(--grama-dim);
+}
+.cdb-confronto-topo{
+  display:grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items:center;
+  gap:8px;
+  font-size: 14px;
+}
+.cdb-confronto-topo span:first-child{ text-align:right; }
+.cdb-confronto-topo .cdb-vencedor{
+  color: var(--grama);
+  font-weight: 700;
+}
+.cdb-agregado{
+  font-family: var(--font-display);
+  font-size: 18px;
+  color: var(--text);
+  white-space: nowrap;
+}
+.cdb-confronto-sub{
+  text-align:center;
+  font-size: 11.5px;
+  color: var(--text-dim);
+  margin-top: 2px;
+}
+.cdb-jogos-lista{
+  margin-top: 10px;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.cdb-jogo-linha{
+  display:flex;
+  justify-content:space-between;
+  gap:8px;
+  font-size: 12px;
+  color: var(--text-dim);
+  padding: 4px 6px;
+  border-radius: 6px;
+  cursor:pointer;
+}
+.cdb-jogo-linha:hover{
+  background: var(--bg-elev-1);
+  color: var(--text);
+}
+.cdb-jogo-label{
+  font-weight: 700;
+  color: var(--text-faint);
+  min-width: 40px;
+}
+.cdb-jogo-linha-vazia{
+  font-size: 12px;
+  color: var(--text-faint);
+  padding: 4px 6px;
+}
+.cdb-penaltis-card{
+  margin-top: 10px;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--ouro-bg);
+  border: 1px solid rgba(232,183,77,.35);
+}
+.cdb-penaltis-card p{
+  margin:0 0 8px;
+  font-size: 12.5px;
+  color: var(--ouro);
+}
+.cdb-penaltis-inputs{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom: 10px;
+}
+.cdb-penaltis-inputs input{
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line-strong);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}
+.cdb-penaltis-inputs span{
+  color: var(--text-dim);
+}
+
+/* ===== COPA DO BRASIL — MATA-MATA (chaveamento público) ===== */
+.cdb-bracket{
+  display:flex;
+  gap:16px;
+  overflow-x:auto;
+  padding-bottom: 12px;
+}
+.cdb-bracket-coluna{
+  min-width: 220px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+}
+.cdb-bracket-coluna h3{
+  font-family: var(--font-display);
+  font-size: 16px;
+  margin: 0 0 4px;
+  color: var(--text-dim);
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}

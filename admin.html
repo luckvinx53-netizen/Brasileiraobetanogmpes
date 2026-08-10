@@ -74,6 +74,7 @@
       <button class="tab-btn" onclick="abrirAba('abaBid', this)">BID</button>
       <button class="tab-btn" onclick="abrirAba('abaRedeSocial', this)">Rede Social</button>
       <button class="tab-btn" onclick="abrirAba('abaTemporadas', this)">Temporadas</button>
+      <button class="tab-btn" onclick="abrirAba('abaCopaDoBrasil', this)">Copa do Brasil</button>
     </div>
 
     <!-- ABA JOGOS -->
@@ -652,6 +653,18 @@
       </div>
     </div>
 
+    <!-- ABA COPA DO BRASIL (MATA-MATA) -->
+    <div id="abaCopaDoBrasil" class="hidden">
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">🇧🇷 Copa do Brasil — mata-mata</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          16 times sorteados do Brasileirão. Oitavas, quartas e semifinal são ida e volta;
+          a final é jogo único. Empate no agregado (ou na final) é decidido nos pênaltis.
+        </p>
+        <div id="cdbConteudo"></div>
+      </div>
+    </div>
+
   </main>
 
   <div id="bottomnav-slot"></div>
@@ -669,6 +682,7 @@
 <script src="bid-admin.js"></script>
 <script src="rede-social-admin.js"></script>
 <script src="temporadas-admin.js"></script>
+<script src="copa-do-brasil-admin.js"></script>
 <script src="admin.js"></script>
 
 </body>

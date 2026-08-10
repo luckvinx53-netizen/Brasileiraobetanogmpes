@@ -15,11 +15,13 @@ const NAV_ICONS = {
   gmacademy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 10 12 5 2 10l10 5 10-5Z"/><path d="M6 12v5c0 1.1 2.7 3 6 3s6-1.9 6-3v-5"/></svg>`,
   feed: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M7 8h10M7 12h10M7 16h6"/></svg>`,
   fantasy: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6M18 9h1.5a2.5 2.5 0 0 0 0-5H18M4 9a8 8 0 0 0 16 0V4H4v5Z"/><path d="M12 17v4M8 21h8"/></svg>`,
+  copadobrasil: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Z"/><path d="M7 5H4a1 1 0 0 0-1 1v1a4 4 0 0 0 4 4M17 5h3a1 1 0 0 1 1 1v1a4 4 0 0 1-4 4"/></svg>`,
 };
 
 // Itens que ficam escondidos atrás do menu "☰" na topbar — páginas
 // secundárias que não cabem na bottom-nav principal.
 const MENU_EXTRA_ITEMS = [
+  { href: "copa-do-brasil", icon: "copadobrasil", label: "Copa do Brasil" },
   { href: "feed", icon: "feed", label: "Rede Social" },
   { href: "fantasy", icon: "fantasy", label: "Fantasy — Meu Cartola" },
   { href: "bid", icon: "bid", label: "BID — Transferências" },

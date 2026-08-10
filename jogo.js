@@ -193,7 +193,7 @@ async function carregarDetalhes() {
   try {
     const { data: jogo, error } = await supabaseClient
       .from("jogos")
-      .select("*, time_casa:time_casa_id(*), time_fora:time_fora_id(*)")
+      .select("*, time_casa:time_casa_id(*), time_fora:time_fora_id(*), confronto:confronto_id(*)")
       .eq("id", id)
       .single();
 
@@ -328,6 +328,36 @@ function filtrarEventosVisiveis(eventos, estado) {
 
 // ---------- HERO (placar) ----------
 
+// Rótulo da "rodada" no mata-mata: Ida / Volta / Final, em vez de "Nª rodada".
+function mcRotuloFaseHtml(jogo) {
+  const NOMES_FASE = { oitavas: "Oitavas", quartas: "Quartas", semifinal: "Semifinal", final: "Final" };
+  if (!jogo.fase || jogo.fase === "grupos") return `${jogo.rodada}ª rodada`;
+
+  const perna = jogo.perna === "ida" ? " • Ida" : jogo.perna === "volta" ? " • Volta" : "";
+  return `${NOMES_FASE[jogo.fase] || jogo.fase}${perna}`;
+}
+
+// Card de agregado, mostrado abaixo do placar do próprio jogo quando ele
+// faz parte de um confronto de ida e volta (não aparece na final, que é
+// jogo único e portanto não tem "agregado" diferente do próprio placar).
+function mcAgregadoMataMataHtml(jogo) {
+  const confronto = jogo.confronto;
+  if (!confronto || confronto.fase === "final") return "";
+
+  const nomeA = confronto.time_a_id === jogo.time_casa_id ? jogo.time_casa?.nome : jogo.time_fora?.nome;
+  const nomeB = confronto.time_a_id === jogo.time_casa_id ? jogo.time_fora?.nome : jogo.time_casa?.nome;
+
+  const penaltisTxt = confronto.foi_penaltis
+    ? ` (pênaltis ${confronto.penaltis_a}-${confronto.penaltis_b})`
+    : "";
+
+  return `
+    <div class="mc-info-row">
+      <span>🏆 Agregado: ${nomeA || "?"} ${confronto.agregado_a ?? 0} x ${confronto.agregado_b ?? 0} ${nomeB || "?"}${penaltisTxt}</span>
+    </div>
+  `;
+}
+
 function mcHeroHtml(jogo, estado) {
   const casa = jogo.time_casa;
   const fora = jogo.time_fora;
@@ -340,7 +370,7 @@ function mcHeroHtml(jogo, estado) {
   return `
     <div class="mc-hero">
       <div class="mc-hero-top">
-        <span class="scoreboard-meta">${jogo.rodada}ª rodada</span>
+        <span class="scoreboard-meta">${mcRotuloFaseHtml(jogo)}</span>
         <span class="status-pill ${statusClasse(statusExibido)}">
           ${emAndamento ? `<span class="mc-status-live"><span class="dot"></span>${minutoAoVivo}' AO VIVO</span>` : statusExibido}
         </span>
@@ -369,6 +399,7 @@ function mcHeroHtml(jogo, estado) {
         <span>📍 ${jogo.local || "Local a definir"}</span>
         <span>📅 ${formatarData(jogo.data_jogo)}${jogo.hora_jogo ? " • " + jogo.hora_jogo : ""}</span>
       </div>
+      ${mcAgregadoMataMataHtml(jogo)}
     </div>
   `;
 }

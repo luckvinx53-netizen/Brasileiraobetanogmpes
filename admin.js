@@ -109,7 +109,7 @@ function mostrarConteudoAdmin() {
 // ---------- ABAS ----------
 
 function abrirAba(id, btn) {
-  ["abaJogos", "abaTimes", "abaJogadores", "abaNoticias", "abaTecnicos", "abaBid", "abaRedeSocial", "abaTemporadas"].forEach(a => {
+  ["abaJogos", "abaTimes", "abaJogadores", "abaNoticias", "abaTecnicos", "abaBid", "abaRedeSocial", "abaTemporadas", "abaCopaDoBrasil"].forEach(a => {
     document.getElementById(a).classList.add("hidden");
   });
   document.getElementById(id).classList.remove("hidden");
@@ -139,6 +139,10 @@ function abrirAba(id, btn) {
   if (id === "abaTemporadas" && typeof carregarTemporadasAdmin === "function") {
     carregarTemporadasAdmin();
     montarFormularioNovaTemporada();
+  }
+
+  if (id === "abaCopaDoBrasil" && typeof carregarCopaDoBrasilAdmin === "function") {
+    carregarCopaDoBrasilAdmin();
   }
 }
 
@@ -683,10 +687,25 @@ async function descomputarJogo(id) {
   const pc = jogo.placar_casa ?? 0;
   const pf = jogo.placar_fora ?? 0;
 
-  const resultadoAjuste = await ajustarTabelaClassificacao(jogo, pc, pf, "subtrair");
-  if (!resultadoAjuste.ok) {
-    notificar("Erro ao ajustar a tabela: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
-    return;
+  const ehMataMata = jogo.fase && jogo.fase !== "grupos";
+  const ehFaseDeGrupo = !ehMataMata && jogo.grupo_id;
+
+  if (!ehMataMata) {
+    if (ehFaseDeGrupo) {
+      if (typeof gpAjustarClassificacaoGrupo === "function") {
+        const resultadoAjuste = await gpAjustarClassificacaoGrupo(jogo, pc, pf, "subtrair");
+        if (!resultadoAjuste.ok) {
+          notificar("Erro ao ajustar o grupo: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
+          return;
+        }
+      }
+    } else {
+      const resultadoAjuste = await ajustarTabelaClassificacao(jogo, pc, pf, "subtrair");
+      if (!resultadoAjuste.ok) {
+        notificar("Erro ao ajustar a tabela: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
+        return;
+      }
+    }
   }
 
   const resultadoEstatisticas = await desfazerEstatisticasEventosDoJogo(id);
@@ -699,6 +718,26 @@ async function descomputarJogo(id) {
   if (erroUpdate) {
     notificar("Erro ao descomputar o jogo: " + erroUpdate.message, "erro");
     return;
+  }
+
+  // Descomputar um jogo de mata-mata invalida o fechamento do confronto
+  // (agregado e vencedor foram calculados em cima do placar que acabou
+  // de ser desfeito) — zera o confronto pra ele ser recalculado do zero
+  // quando os jogos forem encerrados de novo.
+  if (ehMataMata && jogo.confronto_id) {
+    const { error: erroConfronto } = await supabaseClient
+      .from("confrontos_mata_mata")
+      .update({
+        agregado_a: 0,
+        agregado_b: 0,
+        situacao: "em_andamento",
+        foi_penaltis: false,
+        penaltis_a: null,
+        penaltis_b: null,
+        vencedor_id: null,
+      })
+      .eq("id", jogo.confronto_id);
+    if (erroConfronto) console.error("Falha ao resetar confronto de mata-mata:", erroConfronto);
   }
 
   notificar("Jogo descomputado! Os gols, assistências e cartões desse jogo também foram desfeitos. Você pode ajustar os eventos e o jogo encerra sozinho de novo ao chegar aos 90'.");
@@ -720,10 +759,28 @@ async function encerrarJogoManualmente(id) {
 
   const { pc, pf } = await calcularPlacarPorEventosCompartilhado(jogo);
 
-  const resultadoAjuste = await ajustarTabelaClassificacao(jogo, pc, pf, "somar");
-  if (!resultadoAjuste.ok) {
-    notificar("Erro ao ajustar a tabela: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
-    return;
+  // Mesma regra de checarEncerramentoAutomatico (utils.js): jogo de
+  // mata-mata (Copa do Brasil) não ajusta a tabela de pontos corridos
+  // nem a de fase de grupos — só o confronto, e só depois de salvo.
+  const ehMataMata = jogo.fase && jogo.fase !== "grupos";
+  const ehFaseDeGrupo = !ehMataMata && jogo.grupo_id;
+
+  if (!ehMataMata) {
+    if (ehFaseDeGrupo) {
+      if (typeof gpAjustarClassificacaoGrupo === "function") {
+        const resultadoAjuste = await gpAjustarClassificacaoGrupo(jogo, pc, pf, "somar");
+        if (!resultadoAjuste.ok) {
+          notificar("Erro ao ajustar o grupo: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
+          return;
+        }
+      }
+    } else {
+      const resultadoAjuste = await ajustarTabelaClassificacao(jogo, pc, pf, "somar");
+      if (!resultadoAjuste.ok) {
+        notificar("Erro ao ajustar a tabela: " + (resultadoAjuste.error?.message || "desconhecido"), "erro");
+        return;
+      }
+    }
   }
 
   const resultadoEstatisticas = await reaplicarEstatisticasEventosDoJogo(id);
@@ -740,6 +797,13 @@ async function encerrarJogoManualmente(id) {
   if (erroUpdate) {
     notificar("Erro ao encerrar o jogo: " + erroUpdate.message, "erro");
     return;
+  }
+
+  if (ehMataMata && typeof mmAtualizarConfrontoAposJogo === "function" && jogo.confronto_id) {
+    const resultadoConfronto = await mmAtualizarConfrontoAposJogo(jogo.confronto_id);
+    if (!resultadoConfronto.ok) {
+      console.error("Falha ao atualizar confronto de mata-mata:", resultadoConfronto.error);
+    }
   }
 
   notificar(`Jogo encerrado! Placar: ${pc} x ${pf}`);

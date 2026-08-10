@@ -556,13 +556,11 @@ async function checarEncerramentoAutomatico(jogo) {
   const ehFaseDeGrupo = !ehMataMata && jogo.grupo_id;
 
   if (ehMataMata) {
-    if (typeof mmAtualizarConfrontoAposJogo === "function" && jogo.confronto_id) {
-      const resultadoConfronto = await mmAtualizarConfrontoAposJogo(jogo.confronto_id);
-      if (!resultadoConfronto.ok) {
-        console.error("Falha ao atualizar confronto de mata-mata:", resultadoConfronto.error);
-        return jogo;
-      }
-    }
+    // Mata-mata não ajusta tabela nenhuma aqui — o fechamento do
+    // confronto (mmAtualizarConfrontoAposJogo) só acontece MAIS ABAIXO,
+    // depois que este jogo já estiver salvo como Encerrado/computado no
+    // banco, porque aquela função relê os jogos do confronto pelo banco
+    // pra saber se ida e volta já terminaram.
   } else if (ehFaseDeGrupo) {
     if (typeof gpAjustarClassificacaoGrupo === "function") {
       const resultadoAjuste = await gpAjustarClassificacaoGrupo(jogo, pc, pf, "somar");
@@ -590,6 +588,16 @@ async function checarEncerramentoAutomatico(jogo) {
   if (erroUpdate) {
     console.error("Falha ao salvar jogo encerrado:", erroUpdate);
     return jogo;
+  }
+
+  // Só agora, com o jogo já salvo como Encerrado/computado no banco, dá
+  // pra checar com segurança se o confronto de mata-mata (ida+volta, ou
+  // o jogo único da final) já terminou por completo.
+  if (ehMataMata && typeof mmAtualizarConfrontoAposJogo === "function" && jogo.confronto_id) {
+    const resultadoConfronto = await mmAtualizarConfrontoAposJogo(jogo.confronto_id);
+    if (!resultadoConfronto.ok) {
+      console.error("Falha ao atualizar confronto de mata-mata:", resultadoConfronto.error);
+    }
   }
 
   // Post automático de "Fim de jogo" no perfil dos dois clubes. Não usa
@@ -692,4 +700,93 @@ function jogoCardHtml(jogo, eventosGol) {
       </div>
     </div>
   `;
+}
+
+// =========================================================
+// MATA-MATA (Copa do Brasil) — fechamento de confronto
+// =========================================================
+//
+// Chamada por checarEncerramentoAutomatico() sempre que um jogo com
+// jogo.fase preenchida (oitavas/quartas/semifinal/final) acaba de ser
+// encerrado. Não mexe na tabela "times" (mata-mata não tem
+// classificação) — só recalcula o agregado do confronto e, se possível,
+// já define quem avança.
+//
+// Schema (confrontos_mata_mata): agregado_a, agregado_b, situacao
+// ('aguardando' | 'em_andamento' | 'penaltis' | 'definido'), vencedor_id,
+// foi_penaltis, penaltis_a, penaltis_b.
+// jogos.perna: 'ida' | 'volta' | 'unica' (final é sempre jogo único,
+// perna = 'unica' — não existe coluna ida_volta; usamos fase === 'final'
+// pra saber se o confronto é de jogo único).
+//
+// Retorna { ok: true } em caso de sucesso, ou { ok:false, error } se
+// alguma consulta/gravação falhar (o chamador só loga e não trava o
+// encerramento do jogo em si, que já foi salvo antes desta chamada).
+async function mmAtualizarConfrontoAposJogo(confrontoId) {
+  const { data: confronto, error: erroConfronto } = await supabaseClient
+    .from("confrontos_mata_mata")
+    .select("*")
+    .eq("id", confrontoId)
+    .single();
+
+  if (erroConfronto || !confronto) {
+    return { ok: false, error: erroConfronto || { message: "Confronto não encontrado." } };
+  }
+
+  // Já tem vencedor definido (ex: reprocessamento) — nada a fazer.
+  if (confronto.vencedor_id) return { ok: true };
+
+  const { data: jogosConfronto, error: erroJogos } = await supabaseClient
+    .from("jogos")
+    .select("*")
+    .eq("confronto_id", confrontoId);
+
+  if (erroJogos) return { ok: false, error: erroJogos };
+
+  const jogos = jogosConfronto || [];
+  const jogosNecessarios = confronto.fase === "final" ? 1 : 2;
+
+  // Só fecha o confronto quando TODOS os jogos dele já estiverem
+  // encerrados e computados — senão fica esperando (ex: jogo de ida
+  // encerrado, volta ainda não rolou).
+  const todosEncerrados = jogos.length === jogosNecessarios &&
+    jogos.every(j => j.status === "Encerrado" && j.computado === true);
+
+  if (!todosEncerrados) return { ok: true };
+
+  // Placar agregado: time_a soma os gols que fez em cada jogo
+  // (independente de ter mandado ou visitado), mesma lógica pra time_b.
+  let golsA = 0;
+  let golsB = 0;
+  jogos.forEach(j => {
+    const casaEhA = j.time_casa_id === confronto.time_a_id;
+    const pc = j.placar_casa ?? 0;
+    const pf = j.placar_fora ?? 0;
+    if (casaEhA) { golsA += pc; golsB += pf; }
+    else { golsA += pf; golsB += pc; }
+  });
+
+  const atualizacaoConfronto = {
+    agregado_a: golsA,
+    agregado_b: golsB,
+  };
+
+  if (golsA !== golsB) {
+    // Sem empate no agregado: já dá pra definir o vencedor sem pênaltis.
+    atualizacaoConfronto.situacao = "definido";
+    atualizacaoConfronto.vencedor_id = golsA > golsB ? confronto.time_a_id : confronto.time_b_id;
+  } else {
+    // Empatou no agregado (ou na final) — fica esperando o admin
+    // lançar o placar dos pênaltis (aba Copa do Brasil).
+    atualizacaoConfronto.situacao = "penaltis";
+  }
+
+  const { error: erroUpdate } = await supabaseClient
+    .from("confrontos_mata_mata")
+    .update(atualizacaoConfronto)
+    .eq("id", confrontoId);
+
+  if (erroUpdate) return { ok: false, error: erroUpdate };
+
+  return { ok: true };
 }
