@@ -2352,7 +2352,11 @@ a.mc-arbitro-nome:active{ opacity:.75; }
   opacity:.85;
   text-transform: uppercase;
   letter-spacing:.02em;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
 }
+.vt-menu-item:active{ opacity:1; }
 
 /* Recolore os elementos da matéria (tag, título, quote, placar) na
    cor de destaque do veículo daquela partida específica. Cai em

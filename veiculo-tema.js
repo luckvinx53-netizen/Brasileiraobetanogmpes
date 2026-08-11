@@ -17,7 +17,13 @@ const VT_TEMAS = {
     corDestaque: "#00b26e",
     corTexto: "#ffffff",
     fonte: "'Barlow Condensed', sans-serif",
-    menu: ["Início", "Futebol", "Brasileirão", "Vídeos", "Times"],
+    menu: [
+      { label: "Início", href: "index.html" },
+      { label: "Futebol", href: "noticias.html" },
+      { label: "Brasileirão", href: "classificacao.html" },
+      { label: "Vídeos", href: "noticias.html" },
+      { label: "Times", href: "times.html" },
+    ],
     logoHtml: `<span style="font-family:Georgia,serif;font-weight:900;font-size:22px;letter-spacing:-1px;">g<span style="color:#00b26e;">e</span></span>`,
   },
   "Goal": {
@@ -26,7 +32,10 @@ const VT_TEMAS = {
     corDestaque: "#ffffff",
     corTexto: "#ffffff",
     fonte: "Arial, Helvetica, sans-serif",
-    menu: ["Ao Vivo", "Ingressos"],
+    menu: [
+      { label: "Ao Vivo", href: "jogos.html" },
+      { label: "Ingressos", href: "jogos.html" },
+    ],
     logoHtml: `<span style="font-weight:900;font-size:21px;letter-spacing:-.5px;">GOAL<span style="color:#00d448;">!</span></span>`,
   },
   "Lance!": {
@@ -35,7 +44,12 @@ const VT_TEMAS = {
     corDestaque: "#00a651",
     corTexto: "#ffffff",
     fonte: "Arial, Helvetica, sans-serif",
-    menu: ["Agenda", "Notícias", "Times", "Apostas"],
+    menu: [
+      { label: "Agenda", href: "jogos.html" },
+      { label: "Notícias", href: "__veiculo__" },
+      { label: "Times", href: "times.html" },
+      { label: "Apostas", href: "bid.html" },
+    ],
     logoHtml: `<span style="font-weight:900;font-size:20px;">lance<span style="color:#0a2e1a;">!</span></span>`,
   },
   "TNT Sports": {
@@ -44,7 +58,10 @@ const VT_TEMAS = {
     corDestaque: "#ff0060",
     corTexto: "#ffffff",
     fonte: "Arial, Helvetica, sans-serif",
-    menu: ["Notícias", "Mais"],
+    menu: [
+      { label: "Notícias", href: "__veiculo__" },
+      { label: "Mais", href: "noticias.html" },
+    ],
     logoHtml: `<span style="font-weight:900;font-size:18px;">TNT <span style="color:#ff0060;">SPORTS</span></span>`,
   },
   "ESPN": {
@@ -53,7 +70,11 @@ const VT_TEMAS = {
     corDestaque: "#ffffff",
     corTexto: "#ffffff",
     fonte: "Arial, Helvetica, sans-serif",
-    menu: ["Futebol", "Mais Esportes", "Vídeos"],
+    menu: [
+      { label: "Futebol", href: "noticias.html" },
+      { label: "Mais Esportes", href: "noticias.html" },
+      { label: "Vídeos", href: "noticias.html" },
+    ],
     logoHtml: `<span style="font-weight:900;font-style:italic;font-size:20px;letter-spacing:-.5px;">ESPN</span>`,
   },
   "UOL Esporte": {
@@ -62,7 +83,11 @@ const VT_TEMAS = {
     corDestaque: "#d1091b",
     corTexto: "#ffffff",
     fonte: "Arial, Helvetica, sans-serif",
-    menu: ["Futebol", "Times", "Copa do Mundo"],
+    menu: [
+      { label: "Futebol", href: "noticias.html" },
+      { label: "Times", href: "times.html" },
+      { label: "Copa do Mundo", href: "copa-do-brasil.html" },
+    ],
     logoHtml: `<span style="font-weight:900;font-size:19px;">UOL <span style="font-weight:400;color:#9aa4a8;">Esporte</span></span>`,
   },
 };
@@ -75,10 +100,19 @@ function vtTemaPorNomeVeiculo(nome) {
 
 // Monta o cabeçalho fiel ao veículo (logo + menu horizontal), no
 // mesmo espírito dos prints de site real: uma faixa colorida no topo,
-// logo à esquerda, itens de menu à direita/rolando.
-function vtHeaderHtml(tema) {
+// logo à esquerda, itens de menu clicáveis à direita/rolando. Cada
+// item é um link de verdade — "Notícias"/"Agenda" (que representam o
+// próprio veículo) usam "__veiculo__" como marcador e são resolvidos
+// aqui para veiculo.html?nome=<veículo>; os demais apontam direto
+// pra outra página já existente no site (times.html, jogos.html...).
+function vtHeaderHtml(tema, nomeVeiculo) {
   if (!tema) return "";
-  const itens = tema.menu.map(i => `<span class="vt-menu-item">${i}</span>`).join("");
+  const itens = tema.menu.map(i => {
+    const href = i.href === "__veiculo__"
+      ? `veiculo.html?nome=${encodeURIComponent(nomeVeiculo)}`
+      : i.href;
+    return `<a class="vt-menu-item" href="${href}">${i.label}</a>`;
+  }).join("");
   return `
     <div class="vt-header" style="background:${tema.cor};font-family:${tema.fonte};">
       <div class="vt-header-inner">
@@ -112,7 +146,7 @@ function vtAplicarTema(nomeVeiculo) {
   meta.content = tema.cor;
 
   const header = document.createElement("div");
-  header.innerHTML = vtHeaderHtml(tema);
+  header.innerHTML = vtHeaderHtml(tema, nomeVeiculo);
   const container = document.querySelector("main.container");
   if (container) container.parentNode.insertBefore(header.firstElementChild, container);
 }
