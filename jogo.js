@@ -220,10 +220,16 @@ async function carregarDetalhes() {
       { data: eventos } = { data: [] },
       { data: escalacoes } = { data: [] },
       { data: arbitragem } = { data: null },
+      { data: estatisticas } = { data: null },
+      { data: notas } = { data: [] },
+      { data: melhoresMomentos } = { data: [] },
     ] = await Promise.all([
       supabaseClient.from("eventos_jogo").select("*").eq("jogo_id", id).order("minuto", { ascending: true }).then(r => r, e => { console.error("eventos_jogo:", e); return { data: [] }; }),
       supabaseClient.from("escalacoes_tecnico").select("*").eq("jogo_id", id).then(r => r, e => { console.error("escalacoes_tecnico:", e); return { data: [] }; }),
       supabaseClient.from("arbitragem_jogo").select("*").eq("jogo_id", id).maybeSingle().then(r => r, e => { console.error("arbitragem_jogo:", e); return { data: null }; }),
+      supabaseClient.from("estatisticas_jogo").select("*").eq("jogo_id", id).maybeSingle().then(r => r, e => { console.error("estatisticas_jogo:", e); return { data: null }; }),
+      supabaseClient.from("notas_jogo").select("*").eq("jogo_id", id).order("nota", { ascending: false }).then(r => r, e => { console.error("notas_jogo:", e); return { data: [] }; }),
+      supabaseClient.from("melhores_momentos_jogo").select("*").eq("jogo_id", id).order("ordem", { ascending: true }).then(r => r, e => { console.error("melhores_momentos_jogo:", e); return { data: [] }; }),
     ]);
 
     // Busca o elenco dos dois times envolvidos, pra resolver jogador_id -> nome/número/posição.
@@ -295,7 +301,8 @@ async function carregarDetalhes() {
         ${escalacaoLiberada ? mcEscalacoesHtml(jogo, escalacoes || [], elenco || []) : mcEscalacaoBloqueadaHtml(jogo)}
       </div>
       <div id="mcPainelEstatisticas" class="mc-panel ${mcAbaAtiva === "estatisticas" ? "" : "hidden"}">
-      ${mcEstatisticasHtml(jogo)}
+        ${mcEstatisticasHtml(jogo, estatisticas, notas || [], melhoresMomentos || [])}
+      </div>
     </div>
   `;
   } catch (e) {
@@ -639,9 +646,33 @@ function mcListaJogadoresHtml(listaCasa, listaFora) {
 }
 
 // ---------- ESTATÍSTICAS ----------
+// Aba "Estatísticas" do matchcenter: números comparativos casa x fora,
+// vídeos de melhores momentos e notas dos jogadores que entraram em campo.
 
-function mcEstatisticasHtml(jogo) {
-  if (!jogo.estatisticas) {
+// Rótulos e chaves dos números comparativos, na ordem em que aparecem.
+const MC_STATS_CAMPOS = [
+  { chave: "posse", label: "Posse de bola", sufixo: "%" },
+  { chave: "chutes", label: "Chutes" },
+  { chave: "chutes_gol", label: "Chutes no gol" },
+  { chave: "escanteios", label: "Escanteios" },
+  { chave: "faltas", label: "Faltas" },
+  { chave: "impedimentos", label: "Impedimentos" },
+];
+
+function mcEstatisticasHtml(jogo, estatisticas, notas, melhoresMomentos) {
+  return `
+    ${mcMelhoresMomentosHtml(melhoresMomentos)}
+    ${mcStatsComparativasHtml(jogo, estatisticas)}
+    ${mcNotasJogoHtml(jogo, notas)}
+  `;
+}
+
+function mcStatsComparativasHtml(jogo, estatisticas) {
+  const temAlgumNumero = estatisticas && MC_STATS_CAMPOS.some(
+    c => estatisticas[`${c.chave}_casa`] != null || estatisticas[`${c.chave}_fora`] != null
+  );
+
+  if (!temAlgumNumero) {
     return `
       <div class="card">
         <div class="empty-state" style="padding:30px 20px;">
@@ -652,10 +683,109 @@ function mcEstatisticasHtml(jogo) {
     `;
   }
 
+  const linhas = MC_STATS_CAMPOS.map(c => {
+    const vc = estatisticas[`${c.chave}_casa`];
+    const vf = estatisticas[`${c.chave}_fora`];
+    if (vc == null && vf == null) return "";
+
+    const nc = vc ?? 0;
+    const nf = vf ?? 0;
+    const total = nc + nf;
+    // Barra proporcional; se os dois lados forem 0, mostra 50/50 neutro
+    // em vez de sumir com a barra inteira.
+    const pctCasa = total > 0 ? (nc / total) * 100 : 50;
+    const pctFora = total > 0 ? (nf / total) * 100 : 50;
+    const sufixo = c.sufixo || "";
+
+    return `
+      <div class="mc-stat-linha">
+        <div class="mc-stat-labels">
+          <span class="valor-casa">${vc ?? "—"}${vc != null ? sufixo : ""}</span>
+          <span class="nome-stat">${c.label}</span>
+          <span class="valor-fora">${vf ?? "—"}${vf != null ? sufixo : ""}</span>
+        </div>
+        <div class="mc-stat-barra">
+          <div class="casa" style="width:${pctCasa}%;"></div>
+          <div class="fora" style="width:${pctFora}%;"></div>
+        </div>
+      </div>
+    `;
+  }).join("");
+
   return `
     <div class="card">
-      <h2 style="font-family:var(--font-display);font-size:22px;margin:0 0 10px;">Estatísticas</h2>
-      <p class="text-dim" style="font-size:13.5px;line-height:1.6;white-space:pre-line;">${jogo.estatisticas}</p>
+      <h2 style="font-family:var(--font-display);font-size:22px;margin:0 0 14px;">Estatísticas</h2>
+      ${linhas}
+    </div>
+  `;
+}
+
+// ---------- MELHORES MOMENTOS ----------
+
+function mcMelhoresMomentosHtml(melhoresMomentos) {
+  if (!melhoresMomentos || !melhoresMomentos.length) return "";
+
+  const itens = melhoresMomentos.map(m => `
+    <div class="mc-momento-item">
+      <video class="mc-momento-video" src="${m.video_url}" controls playsinline preload="metadata"></video>
+      ${m.legenda ? `<p class="mc-momento-legenda">${m.legenda}</p>` : ""}
+    </div>
+  `).join("");
+
+  return `
+    <div class="card">
+      <h2 style="font-family:var(--font-display);font-size:22px;margin:0 0 14px;">🎬 Melhores momentos</h2>
+      ${itens}
+    </div>
+  `;
+}
+
+// ---------- NOTAS DA PARTIDA ----------
+
+function mcClasseNota(nota) {
+  if (nota >= 7) return "boa";
+  if (nota >= 5) return "media";
+  return "ruim";
+}
+
+function mcNotasJogoHtml(jogo, notas) {
+  if (!notas || !notas.length) {
+    return `
+      <div class="card">
+        <div class="empty-state" style="padding:30px 20px;">
+          <div class="icon">📝</div>
+          <h3>Notas da partida ainda não divulgadas</h3>
+        </div>
+      </div>
+    `;
+  }
+
+  const casa = jogo.time_casa;
+  const fora = jogo.time_fora;
+
+  const notasCasa = notas.filter(n => n.time_id === casa?.id);
+  const notasFora = notas.filter(n => n.time_id === fora?.id);
+
+  const listaHtml = (lista, time) => {
+    if (!lista.length) return `<p class="text-dim" style="font-size:12px;padding:8px 4px;">Sem notas.</p>`;
+    return lista.map(n => `
+      <div class="mc-nota-item">
+        <span class="mc-nota-jogador">
+          ${escudoHtml(time, "escudo-mini")}
+          <span class="nome">${mcLinkJogadorHtml(n.jogador_id, n.jogador_nome)}</span>
+        </span>
+        <span class="mc-nota-valor ${mcClasseNota(Number(n.nota))}">${Number(n.nota).toFixed(1)}</span>
+      </div>
+    `).join("");
+  };
+
+  return `
+    <div class="card">
+      <h2 style="font-family:var(--font-display);font-size:22px;margin:0 0 6px;">Notas da partida</h2>
+      <p class="mc-sub-titulo">${casa ? casa.nome : "Casa"}</p>
+      ${listaHtml(notasCasa, casa)}
+      <p class="mc-sub-titulo">${fora ? fora.nome : "Fora"}</p>
+      ${listaHtml(notasFora, fora)}
     </div>
   `;
 }

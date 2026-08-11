@@ -149,13 +149,17 @@ function abrirAba(id, btn) {
 // ---------- SUB-ABAS DENTRO DO PAINEL DE UM JOGO ----------
 
 function abrirSubAbaJogo(id, btn) {
-  ["subDados", "subEventos"].forEach(a => {
+  ["subDados", "subEventos", "subEstatisticas"].forEach(a => {
     document.getElementById(a).classList.add("hidden");
   });
   document.getElementById(id).classList.remove("hidden");
 
   document.querySelectorAll("#subAbasJogo .tab-btn").forEach(b => b.classList.remove("active"));
   if (btn) btn.classList.add("active");
+
+  // Carrega os dados da aba Estatísticas só quando o admin realmente
+  // abre ela (evita consulta desnecessária toda vez que o jogo é aberto).
+  if (id === "subEstatisticas") carregarEstatisticasDoJogo();
 }
 
 function abrirPainelJogo(titulo) {
@@ -922,6 +926,16 @@ function limparFormularioJogo() {
   document.getElementById("hora_inicio_simulacao").value = "";
   document.getElementById("listaEventosJogo").innerHTML = "";
   exibirArbitragemSorteada(null);
+
+  MC_STATS_CAMPOS_ADMIN.forEach(c => {
+    document.getElementById(c.inputCasa).value = "";
+    document.getElementById(c.inputFora).value = "";
+  });
+  document.getElementById("momentoLegenda").value = "";
+  document.getElementById("momentoArquivo").value = "";
+  document.getElementById("statusUploadMomento").innerText = "";
+  document.getElementById("listaMelhoresMomentos").innerHTML = "";
+  document.getElementById("listaNotasJogo").innerHTML = "";
 }
 
 function jogoAtualDoPainel() {
@@ -1191,6 +1205,279 @@ async function excluirEvento(id) {
 
   notificar("Evento excluído!");
   carregarEventosDoJogo();
+}
+
+// ================= ESTATÍSTICAS DO JOGO =================
+// Sub-aba "Estatísticas" do painel de jogo: números comparativos
+// casa x fora, vídeos de melhores momentos e notas dos jogadores que
+// entraram em campo (titulares + quem entrou por substituição).
+
+const MC_STATS_CAMPOS_ADMIN = [
+  { chave: "posse", inputCasa: "statPosseCasa", inputFora: "statPosseFora" },
+  { chave: "chutes", inputCasa: "statChutesCasa", inputFora: "statChutesFora" },
+  { chave: "chutes_gol", inputCasa: "statChutesGolCasa", inputFora: "statChutesGolFora" },
+  { chave: "escanteios", inputCasa: "statEscanteiosCasa", inputFora: "statEscanteiosFora" },
+  { chave: "faltas", inputCasa: "statFaltasCasa", inputFora: "statFaltasFora" },
+  { chave: "impedimentos", inputCasa: "statImpedimentosCasa", inputFora: "statImpedimentosFora" },
+];
+
+// Carrega tudo que a sub-aba Estatísticas precisa: números salvos, lista
+// de melhores momentos e a lista de jogadores elegíveis pra nota (escalação
+// + quem entrou por substituição), já com a nota já salva preenchida.
+async function carregarEstatisticasDoJogo() {
+  const jogoId = document.getElementById("jogoId").value;
+  if (!jogoId) return;
+
+  await Promise.all([
+    carregarStatsComparativasAdmin(jogoId),
+    carregarMelhoresMomentosAdmin(jogoId),
+    carregarNotasJogoAdmin(jogoId),
+  ]);
+}
+
+// ---------- Números comparativos ----------
+
+async function carregarStatsComparativasAdmin(jogoId) {
+  const { data, error } = await supabaseClient
+    .from("estatisticas_jogo")
+    .select("*")
+    .eq("jogo_id", jogoId)
+    .maybeSingle();
+
+  if (error) { console.error("estatisticas_jogo:", error); return; }
+
+  MC_STATS_CAMPOS_ADMIN.forEach(c => {
+    document.getElementById(c.inputCasa).value = data?.[`${c.chave}_casa`] ?? "";
+    document.getElementById(c.inputFora).value = data?.[`${c.chave}_fora`] ?? "";
+  });
+}
+
+async function salvarEstatisticasJogo() {
+  const jogoId = document.getElementById("jogoId").value;
+  if (!jogoId) { notificar("Salve o jogo primeiro.", "aviso"); return; }
+
+  const linha = { jogo_id: jogoId };
+  MC_STATS_CAMPOS_ADMIN.forEach(c => {
+    const vc = document.getElementById(c.inputCasa).value;
+    const vf = document.getElementById(c.inputFora).value;
+    linha[`${c.chave}_casa`] = vc === "" ? null : Number(vc);
+    linha[`${c.chave}_fora`] = vf === "" ? null : Number(vf);
+  });
+
+  const { error } = await supabaseClient
+    .from("estatisticas_jogo")
+    .upsert(linha, { onConflict: "jogo_id" });
+
+  if (error) { notificar(error.message, "erro"); return; }
+  notificar("Estatísticas salvas!");
+}
+
+// ---------- Melhores momentos (vídeo) ----------
+
+async function carregarMelhoresMomentosAdmin(jogoId) {
+  const area = document.getElementById("listaMelhoresMomentos");
+
+  const { data, error } = await supabaseClient
+    .from("melhores_momentos_jogo")
+    .select("*")
+    .eq("jogo_id", jogoId)
+    .order("ordem", { ascending: true });
+
+  if (error) { console.error("melhores_momentos_jogo:", error); return; }
+
+  if (!data || !data.length) {
+    area.innerHTML = `<p class="text-dim" style="font-size:12px;">Nenhum vídeo enviado ainda.</p>`;
+    return;
+  }
+
+  area.innerHTML = data.map(m => `
+    <div class="adm-momento-item">
+      <video src="${m.video_url}" muted></video>
+      <span class="adm-momento-legenda">${m.legenda || "(sem legenda)"}</span>
+      <button class="btn btn-ghost btn-sm" onclick="excluirMelhorMomento('${m.id}')" title="Excluir">✕</button>
+    </div>
+  `).join("");
+}
+
+async function enviarMelhorMomento() {
+  const jogoId = document.getElementById("jogoId").value;
+  if (!jogoId) { notificar("Salve o jogo primeiro.", "aviso"); return; }
+
+  const arquivoInput = document.getElementById("momentoArquivo");
+  const arquivo = arquivoInput.files[0];
+  const status = document.getElementById("statusUploadMomento");
+
+  if (!arquivo) { notificar("Escolha um vídeo primeiro.", "aviso"); return; }
+
+  const legenda = document.getElementById("momentoLegenda").value.trim();
+  const nomeArquivo = `${jogoId}/${Date.now()}-${arquivo.name}`;
+
+  status.innerText = "Enviando vídeo... isso pode demorar um pouco.";
+
+  const { error: erroUpload } = await supabaseClient
+    .storage
+    .from("melhores-momentos")
+    .upload(nomeArquivo, arquivo, { contentType: arquivo.type, upsert: false });
+
+  if (erroUpload) {
+    status.innerText = "Erro no upload: " + erroUpload.message;
+    notificar("Erro ao enviar o vídeo: " + erroUpload.message, "erro");
+    return;
+  }
+
+  const { data: urlData } = supabaseClient
+    .storage
+    .from("melhores-momentos")
+    .getPublicUrl(nomeArquivo);
+
+  const { error: erroInsert } = await supabaseClient
+    .from("melhores_momentos_jogo")
+    .insert([{ jogo_id: jogoId, video_url: urlData.publicUrl, legenda: legenda || null }]);
+
+  if (erroInsert) {
+    status.innerText = "Erro ao salvar: " + erroInsert.message;
+    notificar(erroInsert.message, "erro");
+    return;
+  }
+
+  status.innerText = "✅ Vídeo enviado!";
+  document.getElementById("momentoLegenda").value = "";
+  arquivoInput.value = "";
+  notificar("Melhor momento adicionado!");
+  carregarMelhoresMomentosAdmin(jogoId);
+}
+
+async function excluirMelhorMomento(id) {
+  if (!confirm("Excluir esse vídeo?")) return;
+
+  const { error } = await supabaseClient.from("melhores_momentos_jogo").delete().eq("id", id);
+  if (error) { notificar(error.message, "erro"); return; }
+
+  notificar("Vídeo excluído!");
+  carregarMelhoresMomentosAdmin(document.getElementById("jogoId").value);
+}
+
+// ---------- Notas da partida ----------
+
+// Monta a lista de jogadores elegíveis pra nota: titulares/reservas
+// escalados pelo técnico + quem entrou em campo por substituição (mesmo
+// que não estivesse na escalação enviada). Ignora quem só saiu (o
+// jogador_id de quem sai já está coberto por ter sido titular/reserva).
+async function jogadoresElegiveisParaNota(jogoId, jogo) {
+  const [{ data: escalacoes }, { data: eventos }] = await Promise.all([
+    supabaseClient.from("escalacoes_tecnico").select("*").eq("jogo_id", jogoId),
+    supabaseClient.from("eventos_jogo").select("*").eq("jogo_id", jogoId),
+  ]);
+
+  const idsTimes = [jogo.time_casa_id, jogo.time_fora_id].filter(Boolean);
+  const { data: elenco } = await supabaseClient.from("jogadores").select("*").in("time_id", idsTimes);
+  const elencoMap = new Map((elenco || []).map(j => [j.id, j]));
+
+  // jogador_id -> time_id, preservando a ordem de aparição
+  const elegiveis = new Map();
+
+  // Só titulares entram em campo automaticamente; reservas só ficam
+  // elegíveis se realmente entrarem (evento de Substituição, tratado
+  // abaixo) — assim a lista reflete quem jogou de verdade, não quem só
+  // foi relacionado no banco.
+  (escalacoes || []).forEach(esc => {
+    (esc.jogadores_titulares || []).forEach(item => {
+      if (item.jogador_id) elegiveis.set(item.jogador_id, esc.time_id);
+    });
+  });
+
+  (eventos || []).forEach(e => {
+    if (e.tipo === "Substituição" && e.jogador_secundario_id) {
+      elegiveis.set(e.jogador_secundario_id, e.time_id);
+    }
+  });
+
+  return [...elegiveis.entries()].map(([jogadorId, timeId]) => ({
+    jogador_id: jogadorId,
+    time_id: timeId,
+    nome: elencoMap.get(jogadorId)?.nome || "(jogador removido)",
+  }));
+}
+
+async function carregarNotasJogoAdmin(jogoId) {
+  const area = document.getElementById("listaNotasJogo");
+  const jogo = jogoAtualDoPainel();
+  if (!jogo) { area.innerHTML = ""; return; }
+
+  const [elegiveis, { data: notasSalvas }] = await Promise.all([
+    jogadoresElegiveisParaNota(jogoId, jogo),
+    supabaseClient.from("notas_jogo").select("*").eq("jogo_id", jogoId),
+  ]);
+
+  if (!elegiveis.length) {
+    area.innerHTML = `
+      <p class="text-dim" style="font-size:12px;">
+        Ninguém elegível ainda — cadastre a escalação (feita pelo técnico) ou lance
+        eventos de Substituição na aba "Eventos / Simulação".
+      </p>
+    `;
+    return;
+  }
+
+  const notasMap = new Map((notasSalvas || []).map(n => [n.jogador_id, n.nota]));
+
+  const nomeTime = (timeId) => timeId === jogo.time_casa_id
+    ? (jogo.time_casa?.nome || "Casa")
+    : (jogo.time_fora?.nome || "Fora");
+
+  const porTime = new Map();
+  elegiveis.forEach(j => {
+    if (!porTime.has(j.time_id)) porTime.set(j.time_id, []);
+    porTime.get(j.time_id).push(j);
+  });
+
+  let html = "";
+  porTime.forEach((lista, timeId) => {
+    html += `<p class="mc-sub-titulo">${nomeTime(timeId)}</p>`;
+    html += lista.map(j => `
+      <div class="adm-nota-item">
+        <span class="adm-nota-nome">${j.nome}</span>
+        <input type="number" min="0" max="10" step="0.1"
+          data-jogador-id="${j.jogador_id}" data-time-id="${j.time_id}" data-nome="${j.nome.replace(/"/g, '&quot;')}"
+          class="nota-input" value="${notasMap.get(j.jogador_id) ?? ""}" placeholder="0-10">
+      </div>
+    `).join("");
+  });
+
+  area.innerHTML = html;
+}
+
+async function salvarNotasJogo() {
+  const jogoId = document.getElementById("jogoId").value;
+  if (!jogoId) { notificar("Salve o jogo primeiro.", "aviso"); return; }
+
+  const inputs = document.querySelectorAll("#listaNotasJogo .nota-input");
+  const linhas = [];
+
+  for (const input of inputs) {
+    if (input.value === "") continue;
+    const nota = Number(input.value);
+    if (Number.isNaN(nota) || nota < 0 || nota > 10) {
+      notificar(`Nota inválida para ${input.dataset.nome} (use 0 a 10).`, "aviso");
+      return;
+    }
+    linhas.push({
+      jogo_id: jogoId,
+      jogador_id: input.dataset.jogadorId,
+      time_id: input.dataset.timeId,
+      jogador_nome: input.dataset.nome,
+      nota,
+    });
+  }
+
+  if (!linhas.length) { notificar("Preencha ao menos uma nota.", "aviso"); return; }
+
+  const { error } = await supabaseClient
+    .from("notas_jogo")
+    .upsert(linhas, { onConflict: "jogo_id,jogador_id" });
+
+  if (error) { notificar(error.message, "erro"); return; }
+  notificar("Notas salvas!");
 }
 
 // ================= JOGADORES =================

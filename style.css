@@ -2479,3 +2479,129 @@ body[data-veiculo="uol"] .vt-header{ border-bottom-color: rgba(209,9,27,.4); }
   font-size: 11px;
   color: var(--text-faint);
 }
+
+/* =========================================================
+   ABA ESTATÍSTICAS DO JOGO — notas dos jogadores e vídeos de
+   melhores momentos (jogo.html, entre Escalações e o fim).
+   ========================================================= */
+
+.mc-nota-item{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  gap:10px;
+  padding:10px 4px;
+  border-bottom:1px solid var(--line);
+}
+.mc-nota-item:last-child{ border-bottom:none; }
+.mc-nota-jogador{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+}
+.mc-nota-jogador .escudo-mini,
+.mc-nota-jogador .escudo-placeholder{ width:18px; height:18px; flex-shrink:0; object-fit:contain; font-size:8px; }
+.mc-nota-jogador .nome{
+  font-weight:700;
+  font-size:13.5px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.mc-nota-valor{
+  flex-shrink:0;
+  min-width:34px;
+  text-align:center;
+  padding:3px 8px;
+  border-radius:100px;
+  font-weight:800;
+  font-size:13px;
+  color:#0b0f14;
+}
+.mc-nota-valor.boa{ background: var(--grama); }
+.mc-nota-valor.media{ background:#f5c451; }
+.mc-nota-valor.ruim{ background: var(--vermelho); color:#fff; }
+
+.mc-momento-video{
+  width:100%;
+  border-radius: var(--radius-md);
+  background:#000;
+  display:block;
+  margin-bottom:8px;
+}
+.mc-momento-item{ margin-bottom:20px; }
+.mc-momento-item:last-child{ margin-bottom:0; }
+.mc-momento-legenda{
+  font-size:12.5px;
+  color: var(--text-dim);
+  line-height:1.5;
+  margin:0;
+}
+
+/* ---------- ADMIN: sub-aba Estatísticas do painel de jogo ---------- */
+.adm-stat-linha{
+  display:grid;
+  grid-template-columns: 1fr 90px 1fr;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+.adm-stat-linha label{
+  grid-column: 1 / -1;
+  font-size:11.5px;
+  color: var(--text-dim);
+  font-weight:600;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  margin-bottom:-2px;
+}
+.adm-stat-linha input{ text-align:center; }
+
+.adm-nota-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:9px 4px;
+  border-bottom:1px solid var(--line);
+}
+.adm-nota-item:last-child{ border-bottom:none; }
+.adm-nota-item .adm-nota-nome{
+  flex:1;
+  font-size:13px;
+  font-weight:600;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.adm-nota-item input{
+  width:64px;
+  flex-shrink:0;
+  text-align:center;
+}
+
+.adm-momento-item{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding:10px 4px;
+  border-bottom:1px solid var(--line);
+}
+.adm-momento-item:last-child{ border-bottom:none; }
+.adm-momento-item video{
+  width:90px;
+  height:56px;
+  object-fit:cover;
+  border-radius:8px;
+  flex-shrink:0;
+  background:#000;
+}
+.adm-momento-legenda{
+  flex:1;
+  min-width:0;
+  font-size:12.5px;
+  color: var(--text-dim);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
