@@ -255,7 +255,10 @@ const MC_REPORTERES_POR_TIME = {
 // Quando o time envolvido não tem um repórter fixo cadastrado (ex: um
 // clube fora da lista oficial), a matéria é atribuída a um veículo
 // esportivo fictício — igual a uma reportagem assinada pela redação.
-const MC_VEICULOS_FALLBACK = ["ge", "Lance!", "Goal", "365Scores"];
+// Mesma lista de PN_VEICULOS (partida-noticias.js), pra que o mesmo
+// conjunto de veículos (com tema visual próprio) assine tanto notícia
+// de fim de jogo quanto matéria de mercado.
+const MC_VEICULOS_FALLBACK = ["ge", "Goal", "Lance!", "TNT Sports", "ESPN", "UOL Esporte"];
 
 function tmHashVeiculoFallback(seed) {
   const idx = tmHashString(seed + "-veiculo") % MC_VEICULOS_FALLBACK.length;

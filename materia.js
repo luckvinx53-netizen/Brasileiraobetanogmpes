@@ -206,12 +206,21 @@ async function carregarMateria() {
 
 function mtBylineHtml(assinatura) {
   const icone = assinatura.tipo === "reporter" ? "📝" : "📰";
+  const linkArroba = assinatura.tipo === "reporter"
+    ? `<a href="reporter.html?arroba=${encodeURIComponent(assinatura.arroba)}" style="color:inherit;text-decoration:none;">${assinatura.arroba}</a>`
+    : "";
+  // Quando a assinatura é de um veículo (não repórter fixo), o nome
+  // vira link pra página do veículo (veiculo.html) — a "home" com
+  // todas as matérias assinadas por aquela redação.
+  const nomeExibido = assinatura.tipo === "reporter"
+    ? assinatura.nome
+    : `<a href="veiculo.html?nome=${encodeURIComponent(assinatura.nome)}" style="color:inherit;text-decoration:none;">Redação ${assinatura.nome}</a>`;
   return `
     <div class="materia-byline">
       <div class="avatar">${icone}</div>
       <div class="info">
-        <p class="nome">${assinatura.tipo === "reporter" ? assinatura.nome : `Redação ${assinatura.nome}`}</p>
-        <p class="veiculo">${assinatura.tipo === "reporter" ? `${assinatura.arroba} · Cobre o ${assinatura.timeCobertura || ""}` : "Reportagem especial"}</p>
+        <p class="nome">${nomeExibido}</p>
+        <p class="veiculo">${assinatura.tipo === "reporter" ? `${linkArroba} · Cobre o ${assinatura.timeCobertura || ""}` : "Reportagem especial"}</p>
       </div>
     </div>
   `;
@@ -221,6 +230,12 @@ function renderMateriaRumor(area, c, jogador, timeDono, timeInteressado, assinat
   const jogadorNome = jogador?.nome || "o jogador";
   const nomeTimeInt = timeInteressado?.nome || "um clube";
   const nomeTimeDono = timeDono?.nome || "seu clube atual";
+
+  // Links do jogador e dos dois times, usados nas menções em negrito
+  // no texto corrido — mesmo padrão da matéria de fim de jogo.
+  const linkJogador = jogador ? `<a href="jogador.html?id=${jogador.id}" style="color:inherit;text-decoration:none;">${jogadorNome}</a>` : jogadorNome;
+  const linkTimeInt = timeInteressado ? `<a href="time.html?id=${timeInteressado.id}" style="color:inherit;text-decoration:none;">${nomeTimeInt}</a>` : nomeTimeInt;
+  const linkTimeDono = timeDono ? `<a href="time.html?id=${timeDono.id}" style="color:inherit;text-decoration:none;">${nomeTimeDono}</a>` : nomeTimeDono;
 
   const titulo = tmFraseRumor(c.id, jogadorNome, nomeTimeInt, jogador).replace(/<\/?b>/g, "");
   const comValor = c.valor_consultado && tmRumorComValor(c.id);
@@ -235,7 +250,7 @@ function renderMateriaRumor(area, c, jogador, timeDono, timeInteressado, assinat
     ${mtBylineHtml(assinatura)}
 
     <div class="materia-corpo">
-      <p>O nome de <b>${jogadorNome}</b> voltou a circular nos bastidores do mercado da bola. De acordo com apuração desta reportagem, o <b>${nomeTimeInt}</b> monitora a situação do atleta, que atualmente defende o <b>${nomeTimeDono}</b>.</p>
+      <p>O nome de <b>${linkJogador}</b> voltou a circular nos bastidores do mercado da bola. De acordo com apuração desta reportagem, o <b>${linkTimeInt}</b> monitora a situação do atleta, que atualmente defende o <b>${linkTimeDono}</b>.</p>
 
       <p>${paragrafo2}</p>
 
@@ -257,6 +272,12 @@ function renderMateriaConfirmada(area, c, jogador, timeDono, timeInteressado, as
   const nomeTimeDono = timeDono?.nome || "seu clube anterior";
   const tipoLabel = { definitivo: "em definitivo", emprestimo: "por empréstimo" };
 
+  // Links do jogador e dos dois times, usados nas menções em negrito
+  // no texto corrido — mesmo padrão da matéria de fim de jogo.
+  const linkJogador = jogador ? `<a href="jogador.html?id=${jogador.id}" style="color:inherit;text-decoration:none;">${jogadorNome}</a>` : jogadorNome;
+  const linkTimeInt = timeInteressado ? `<a href="time.html?id=${timeInteressado.id}" style="color:inherit;text-decoration:none;">${nomeTimeInt}</a>` : nomeTimeInt;
+  const linkTimeDono = timeDono ? `<a href="time.html?id=${timeDono.id}" style="color:inherit;text-decoration:none;">${nomeTimeDono}</a>` : nomeTimeDono;
+
   const titulo = tmFraseConfirmada(c.id, jogadorNome, nomeTimeDono, nomeTimeInt, jogador).replace(/<\/?b>/g, "");
   const paragrafo2 = mtEscolherPorPerfil(MT_PARAGRAFOS_CONFIRMADA_POR_PERFIL, jogador, c.id + "-p2")(jogadorNome, nomeTimeInt, nomeTimeDono, jogador || {});
   const quote = mtEscolherPorPerfil(MT_QUOTES_CONFIRMADA_POR_PERFIL, jogador, c.id + "-q")(jogadorNome, jogador || {});
@@ -269,7 +290,7 @@ function renderMateriaConfirmada(area, c, jogador, timeDono, timeInteressado, as
     ${mtBylineHtml(assinatura)}
 
     <div class="materia-corpo">
-      <p>É oficial: <b>${jogadorNome}</b> é o mais novo reforço do <b>${nomeTimeInt}</b>. O clube confirmou a contratação ${c.tipo_contratacao ? tipoLabel[c.tipo_contratacao] : ""}, encerrando a passagem do atleta pelo <b>${nomeTimeDono}</b>.</p>
+      <p>É oficial: <b>${linkJogador}</b> é o mais novo reforço do <b>${linkTimeInt}</b>. O clube confirmou a contratação ${c.tipo_contratacao ? tipoLabel[c.tipo_contratacao] : ""}, encerrando a passagem do atleta pelo <b>${linkTimeDono}</b>.</p>
 
       <p>${paragrafo2}</p>
 
@@ -288,15 +309,17 @@ function renderMateriaConfirmada(area, c, jogador, timeDono, timeInteressado, as
 // Card com estatísticas reais do jogador na temporada (gols,
 // assistências, cartões) e o time atual dele — dados de verdade do
 // banco, não inventados, igual ao que já aparece em jogador.
-function mtJogadorCardHtml(jogador, timeExibido) {
+function mtJogadorCardHtml(jogador, timeExibido, subtitulo) {
   if (!jogador) return `<p class="text-dim" style="font-size:13px;">Dados do jogador não disponíveis.</p>`;
 
+  const linhaInfo = subtitulo || `${jogador.posicao || "—"} ${jogador.idade ? "· " + jogador.idade + " anos" : ""} · ${timeExibido?.nome || "sem time"}`;
+
   return `
-    <div class="materia-jogador-card" onclick="location.href='jogador?id=${jogador.id}'">
+    <div class="materia-jogador-card" onclick="location.href='jogador.html?id=${jogador.id}'">
       <div class="escudo-placeholder">${jogador.numero ?? "-"}</div>
       <div class="info">
         <h3>${jogador.nome}</h3>
-        <p>${jogador.posicao || "—"} ${jogador.idade ? "· " + jogador.idade + " anos" : ""} · ${timeExibido?.nome || "sem time"}</p>
+        <p>${linhaInfo}</p>
         <p style="margin-top:4px;">⚽ ${jogador.gols || 0} gols · 🎯 ${jogador.assistencias || 0} assist. · 🟨 ${jogador.cartoes_amarelos || 0} · 🟥 ${jogador.cartoes_vermelhos || 0}</p>
       </div>
       <span class="seta">›</span>
@@ -357,6 +380,21 @@ async function carregarMateriaFimDeJogo(area, id) {
     .order("minuto", { ascending: true })
     .then(r => r, e => { console.error("eventos_jogo:", e); return { data: [] }; });
 
+  // Dados completos (foto/posição/estatísticas) de cada jogador que
+  // marcou, pra linkar o nome de verdade (não "Transfermarkt") e montar
+  // os cards "Sobre o jogador" no fim da matéria, igual ao que já existe
+  // nas matérias de rumor/transferência (mtJogadorCardHtml).
+  const idsArtilheiros = [...new Set((eventos || []).map(e => e.jogador_id).filter(Boolean))];
+  let mapaJogadores = {};
+  if (idsArtilheiros.length) {
+    const { data: jogadoresGols } = await supabaseClient
+      .from("jogadores")
+      .select("*, time:time_id(*)")
+      .in("id", idsArtilheiros)
+      .then(r => r, e => { console.error("jogadores (gols):", e); return { data: [] }; });
+    mapaJogadores = Object.fromEntries((jogadoresGols || []).map(jg => [jg.id, jg]));
+  }
+
   const n = pnJogoParaNoticia(j);
   const nomeCasa = n.timeCasaNome;
   const nomeFora = n.timeForaNome;
@@ -365,6 +403,17 @@ async function carregarMateriaFimDeJogo(area, id) {
   const empate = pc === pf;
   const vencedor = empate ? null : (pc > pf ? nomeCasa : nomeFora);
   const perdedor = empate ? null : (pc > pf ? nomeFora : nomeCasa);
+
+  // Links para o time (perfil) e o estádio, reaproveitados no placar em
+  // destaque e no texto corrido (qualquer menção em negrito ao nome de
+  // um time ou do estádio vira link, igual ao link do jogador nos gols).
+  const linkTimeCasa = (texto) => `<a href="time.html?id=${j.time_casa_id}" style="color:inherit;text-decoration:none;">${texto}</a>`;
+  const linkTimeFora = (texto) => `<a href="time.html?id=${j.time_fora_id}" style="color:inherit;text-decoration:none;">${texto}</a>`;
+  const linkVencedor = (texto) => (vencedor === nomeCasa ? linkTimeCasa(texto) : linkTimeFora(texto));
+  const linkPerdedor = (texto) => (perdedor === nomeCasa ? linkTimeCasa(texto) : linkTimeFora(texto));
+  const linkEstadio = j.local
+    ? `<a href="estadio.html?nome=${encodeURIComponent(j.local)}" style="color:inherit;text-decoration:none;">${j.local}</a>`
+    : "";
 
   const paragrafo2 = empate
     ? mtEscolher(MT_PARAGRAFOS_EMPATE, j.id + "-p2")(nomeCasa, nomeFora)
@@ -376,20 +425,30 @@ async function carregarMateriaFimDeJogo(area, id) {
 
   const assinatura = n.assinatura;
 
+  // Cada gol vira um card (mesmo componente usado nas matérias de
+  // rumor/transferência — mtJogadorCardHtml), na ordem dos minutos, no
+  // lugar da antiga lista de texto. O minuto e observações (gol contra/
+  // pênalti) aparecem como um selinho no topo do card. Gol contra
+  // também ganha card: quem marcou foi ele, mesmo que contra o próprio time.
   const golsHtml = (eventos && eventos.length)
     ? `
       <p class="materia-secao-titulo">Gols do jogo</p>
-      <ul class="materia-lista-gols">
-        ${eventos.map(e => {
-          const timeDoGol = e.time_id === j.time_casa_id ? nomeCasa : nomeFora;
-          const ehGolContra = e.tipo === "Gol Contra";
-          const ehPenalti = e.tipo === "Pênalti Marcado";
-          const link = e.jogador_id
-            ? `<a href="jogador?id=${e.jogador_id}">Transfermarkt</a>`
-            : `Transfermarkt`;
-          return `<li>${e.minuto ?? "-"}' — ${link} (${timeDoGol})${ehGolContra ? " (gol contra)" : ""}${ehPenalti ? " (pênalti)" : ""}</li>`;
-        }).join("")}
-      </ul>
+      ${eventos.map(e => {
+        const timeDoGol = e.time_id === j.time_casa_id ? nomeCasa : nomeFora;
+        const ehGolContra = e.tipo === "Gol Contra";
+        const ehPenalti = e.tipo === "Pênalti Marcado";
+        const observacao = ehGolContra ? " · gol contra" : ehPenalti ? " · pênalti" : "";
+        const jogadorEvento = e.jogador_id ? mapaJogadores[e.jogador_id] : null;
+
+        if (jogadorEvento) {
+          return mtJogadorCardHtml(jogadorEvento, jogadorEvento.time, `${e.minuto ?? "-"}' · ${timeDoGol}${observacao}`);
+        }
+
+        // Sem jogador_id cadastrado (evento antigo/avulso): mantém uma
+        // linha simples de texto em vez de um card vazio.
+        const nomeAutor = e.jogador_nome || "Autor não identificado";
+        return `<p style="font-size:13.5px;color:var(--text-dim);margin:8px 0;">${e.minuto ?? "-"}' — <b style="color:var(--text);">${nomeAutor}</b> (${timeDoGol})${observacao}</p>`;
+      }).join("")}
     `
     : "";
 
@@ -398,16 +457,16 @@ async function carregarMateriaFimDeJogo(area, id) {
     <h1 class="materia-titulo">${n.titulo}</h1>
     ${mtBylineHtml(assinatura)}
 
-    <div class="materia-placar-destaque">
+    <a class="materia-placar-destaque" href="jogo.html?id=${j.id}" style="text-decoration:none;color:inherit;cursor:pointer;">
       <span>${nomeCasa}</span>
       <span class="placar">${pc} <small>x</small> ${pf}</span>
       <span>${nomeFora}</span>
-    </div>
+    </a>
 
     <div class="materia-corpo">
-      <p>Em jogo válido pela <b>${j.rodada}ª rodada</b> do Brasileirão${j.local ? `, disputado no <b>${j.local}</b>` : ""}, ${empate
-        ? `<b>${nomeCasa}</b> e <b>${nomeFora}</b> ficaram no empate em <b>${pc} a ${pf}</b>.`
-        : `<b>${vencedor}</b> venceu o <b>${perdedor}</b> por <b>${Math.max(pc, pf)} a ${Math.min(pc, pf)}</b>.`}</p>
+      <p>Em jogo válido pela <b>${j.rodada}ª rodada</b> do Brasileirão${j.local ? `, disputado no <b>${linkEstadio}</b>` : ""}, ${empate
+        ? `<b>${linkTimeCasa(nomeCasa)}</b> e <b>${linkTimeFora(nomeFora)}</b> ficaram no empate em <b>${pc} a ${pf}</b>.`
+        : `<b>${linkVencedor(vencedor)}</b> venceu o <b>${linkPerdedor(perdedor)}</b> por <b>${Math.max(pc, pf)} a ${Math.min(pc, pf)}</b>.`}</p>
 
       <p>${paragrafo2}</p>
 
@@ -418,6 +477,10 @@ async function carregarMateriaFimDeJogo(area, id) {
 
     ${golsHtml}
   `;
+
+  // Veste a matéria com o visual do veículo que a assina (Goal,
+  // Lance!, ESPN, UOL, TNT Sports, ge), imitando o site real dele.
+  if (typeof vtAplicarTema === "function") vtAplicarTema(assinatura.nome);
 }
 
 carregarMateria();

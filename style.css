@@ -2096,6 +2096,8 @@ body.tema-time .section-title h2{
 .mc-arbitro-item:last-child{ border-bottom:none; }
 .mc-arbitro-funcao{ color: var(--text-dim); font-weight:600; }
 .mc-arbitro-nome{ font-weight:700; text-align:right; }
+a.mc-arbitro-nome{ color: var(--grama); }
+a.mc-arbitro-nome:active{ opacity:.75; }
 
 .mc-estadio-nome{
   font-family: var(--font-display);
@@ -2311,4 +2313,151 @@ body.tema-time .section-title h2{
   color: var(--text-dim);
   text-transform:uppercase;
   letter-spacing:.04em;
+}
+
+/* =========================================================
+   VEÍCULO-TEMA — visual fiel a cada site de imprensa esportiva
+   (Goal, Lance!, ESPN, UOL, TNT Sports, ge) na matéria de fim de
+   jogo. Ativado via [data-veiculo] no <body> (veiculo-tema.js).
+   ========================================================= */
+
+/* Faixa de cabeçalho no estilo do veículo, injetada antes do
+   conteúdo (some quando não há tema, ou seja, fora das matérias
+   de fim de jogo/matérias de mercado). */
+.vt-header{
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255,255,255,.12);
+}
+.vt-header-inner{
+  max-width: 640px;
+  margin: 0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap: 14px;
+  color: #fff;
+}
+.vt-logo{ flex-shrink:0; }
+.vt-menu{
+  display:flex;
+  gap: 14px;
+  overflow-x:auto;
+  scrollbar-width:none;
+}
+.vt-menu::-webkit-scrollbar{ display:none; }
+.vt-menu-item{
+  font-size: 12px;
+  font-weight: 700;
+  white-space:nowrap;
+  opacity:.85;
+  text-transform: uppercase;
+  letter-spacing:.02em;
+}
+
+/* Recolore os elementos da matéria (tag, título, quote, placar) na
+   cor de destaque do veículo daquela partida específica. Cai em
+   cascata sobre .materia-tag.jogo / .materia-corpo b / .materia-quote
+   / .materia-placar-destaque .placar, que já existem. */
+body[data-veiculo] .materia-tag.jogo{
+  background: color-mix(in srgb, var(--vt-destaque) 18%, transparent);
+  color: var(--vt-destaque);
+}
+body[data-veiculo] .materia-corpo b{ color: var(--vt-destaque); }
+body[data-veiculo] .materia-quote{ border-left-color: var(--vt-destaque); }
+body[data-veiculo] .materia-placar-destaque{
+  border-color: color-mix(in srgb, var(--vt-destaque) 35%, var(--line));
+}
+body[data-veiculo] .materia-placar-destaque .placar{ color: var(--vt-destaque); }
+body[data-veiculo] .mc-assinatura-arroba{ color: var(--vt-destaque); }
+body[data-veiculo] .materia-lista-gols li a{ color: var(--vt-destaque); }
+body[data-veiculo] .materia-byline .avatar{ background: color-mix(in srgb, var(--vt-destaque) 22%, var(--bg-elev-2)); }
+
+/* Ajustes finos por veículo — casos em que a cor de destaque
+   sozinha não é suficiente pra "ler" como o site real. */
+
+/* Goal: fundo pretíssimo estilo goal.com, texto branco puro. */
+body[data-veiculo="goal"] .materia-tag.jogo{ background:#1a1a1a; color:#fff; border:1px solid rgba(255,255,255,.2); }
+body[data-veiculo="goal"] .materia-corpo b{ color:#fff; }
+body[data-veiculo="goal"] .materia-quote{ border-left-color:#fff; }
+
+/* Lance!: verde-bandeira como cor de assinatura do site. */
+body[data-veiculo="lance"] .materia-placar-destaque{ background: rgba(0,166,81,.06); }
+
+/* ESPN: vermelho ESPN como assinatura visual forte. */
+body[data-veiculo="espn"] .materia-tag.jogo{ background: rgba(209,9,27,.15); color:#ff4d5e; }
+
+/* TNT Sports: rosa/roxo como no app. */
+body[data-veiculo="tnt"] .materia-quote{ border-left-color:#ff0060; }
+
+/* UOL: vermelho UOL sobre fundo preto do site. */
+body[data-veiculo="uol"] .vt-header{ border-bottom-color: rgba(209,9,27,.4); }
+
+/* =========================================================
+   PÁGINA DO VEÍCULO (veiculo.html) — feed de matérias assinadas
+   por "Redação X", no visual do site daquele veículo (mesmo tema
+   de VEÍCULO-TEMA, aplicado via vtAplicarTema).
+   ========================================================= */
+.vg-hero{
+  padding: 22px 18px 18px;
+  border-bottom: 1px solid var(--line);
+}
+.vg-hero h1{
+  font-family: var(--font-display);
+  font-size: 30px;
+  margin: 0 0 4px;
+  color: var(--vt-destaque, var(--text));
+}
+.vg-hero p{
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.vg-feed{
+  display:flex;
+  flex-direction:column;
+}
+.vg-card{
+  display:flex;
+  gap: 12px;
+  padding: 16px 18px;
+  border-bottom: 1px solid var(--line);
+  text-decoration:none;
+  color: inherit;
+}
+.vg-card:active{ background: var(--bg-elev-1); }
+.vg-card-icone{
+  font-size: 20px;
+  flex-shrink:0;
+  line-height:1.4;
+}
+.vg-card-body{ flex:1; min-width:0; }
+.vg-card-tag{
+  display:inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing:.3px;
+  color: var(--vt-destaque, var(--text-dim));
+  margin-bottom: 4px;
+}
+.vg-card-body h3{
+  font-size: 15px;
+  line-height: 1.35;
+  margin: 0 0 4px;
+  color: var(--text);
+}
+.vg-card-body p{
+  font-size: 12.5px;
+  color: var(--text-dim);
+  margin: 0 0 6px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+.vg-card-body time{
+  font-size: 11px;
+  color: var(--text-faint);
 }
