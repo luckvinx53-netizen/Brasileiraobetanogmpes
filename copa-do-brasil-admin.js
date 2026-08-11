@@ -340,7 +340,11 @@ async function cdbSortearOitavas() {
 
   if (erro) { notificar(erro.message, "erro"); return; }
 
-  notificar("Oitavas sorteadas!");
+  notificar(
+    typeof arbitrosCbfCache !== "undefined" && arbitrosCbfCache.length
+      ? "Oitavas sorteadas, com arbitragem definida automaticamente!"
+      : "Oitavas sorteadas! Cadastre árbitros CBF na aba \"Times\" para a arbitragem ser sorteada automaticamente."
+  );
   await carregarCopaDoBrasilAdmin();
 }
 
@@ -372,7 +376,7 @@ async function cdbCriarConfrontosDaFase(fase, itens) {
         ];
 
     for (const jg of jogosNovos) {
-      const { error: erroJogo } = await supabaseClient.from("jogos").insert([{
+      const { data: jogoCriado, error: erroJogo } = await supabaseClient.from("jogos").insert([{
         temporada_id: cdbTemporadaCache.id,
         rodada: 0,
         time_casa_id: jg.casa.id,
@@ -385,8 +389,17 @@ async function cdbCriarConfrontosDaFase(fase, itens) {
         fase,
         confronto_id: confronto.id,
         perna: jg.perna,
-      }]);
+      }]).select().single();
       if (erroJogo) return erroJogo;
+
+      // Sorteia o quarteto de arbitragem automaticamente, igual ao que
+      // já acontece ao criar um jogo pelo formulário do Brasileirão
+      // (ver admin.js:salvarJogo). Não bloqueia o sorteio do chaveamento
+      // se faltar árbitro cadastrado — só fica sem arbitragem sorteada,
+      // como já acontecia manualmente nesse caso.
+      if (typeof sortearESalvarArbitragem === "function") {
+        await sortearESalvarArbitragem(jogoCriado.id, true);
+      }
     }
   }
 

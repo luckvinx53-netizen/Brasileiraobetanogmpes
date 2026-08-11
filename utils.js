@@ -664,6 +664,18 @@ function estadoAoVivoDoJogo(jogo, eventosGol) {
   return { pc, pf, minutoAoVivo, statusExibido, emAndamento, temPlacar };
 }
 
+// Rótulo do "quando" de um jogo: fase/perna no mata-mata (Copa do
+// Brasil), "Nª rodada" nos demais. Compartilhado por jogoCardHtml
+// (scoreboard, usado em home/jogos/detalhes) e por quem precisar do
+// mesmo rótulo em outro lugar — evita duplicar essa lógica.
+const NOMES_FASE_MATA_MATA = { oitavas: "Oitavas", quartas: "Quartas", semifinal: "Semifinal", final: "Final" };
+
+function rotuloRodadaOuFase(jogo) {
+  if (!jogo.fase || jogo.fase === "grupos") return `${jogo.rodada}ª rodada`;
+  const perna = jogo.perna === "ida" ? " • Ida" : jogo.perna === "volta" ? " • Volta" : "";
+  return `${NOMES_FASE_MATA_MATA[jogo.fase] || jogo.fase}${perna}`;
+}
+
 // Card de jogo (scoreboard) reutilizado em home, jogos e detalhes.
 // eventosGol é opcional: se não for passado, mostra o placar salvo
 // (comportamento antigo, só correto quando o jogo já está encerrado).
@@ -676,7 +688,7 @@ function jogoCardHtml(jogo, eventosGol) {
   return `
     <div class="scoreboard" onclick="location.href='jogo?id=${jogo.id}'">
       <div class="scoreboard-top">
-        <span class="scoreboard-meta">${jogo.rodada}ª rodada</span>
+        <span class="scoreboard-meta">${rotuloRodadaOuFase(jogo)}</span>
         <span class="status-pill ${statusClasse(statusExibido)}">${emAndamento ? `${minutoAoVivo}'` : statusExibido}</span>
       </div>
       <div class="scoreboard-main">
@@ -700,6 +712,62 @@ function jogoCardHtml(jogo, eventosGol) {
       </div>
     </div>
   `;
+}
+
+// =========================================================
+// MATA-MATA (Copa do Brasil) — chaveamento compartilhado
+// Usado por classificacao.js (chaveamento completo) e home.js
+// (resumo na Home), pra não duplicar a mesma lógica de HTML.
+// =========================================================
+
+const MM_NOME_FASE = { oitavas: "Oitavas", quartas: "Quartas", semifinal: "Semifinal", final: "Final" };
+const MM_ORDEM_FASE = ["oitavas", "quartas", "semifinal", "final"];
+
+function mmBracketColunaHtml(fase, confrontos) {
+  const confrontosFase = confrontos.filter(c => c.fase === fase).sort((a, b) => a.ordem - b.ordem);
+  if (!confrontosFase.length) return "";
+
+  return `
+    <div class="cdb-bracket-coluna">
+      <h3>${MM_NOME_FASE[fase]}</h3>
+      ${confrontosFase.map(mmBracketConfrontoCardHtml).join("")}
+    </div>
+  `;
+}
+
+function mmBracketConfrontoCardHtml(confronto) {
+  const timeA = confronto.time_a;
+  const timeB = confronto.time_b;
+  const vencedor = confronto.vencedor;
+
+  const linhaTime = (time, golsAgregado) => `
+    <div class="cdb-jogo-linha" style="cursor:default;">
+      <span class="${vencedor && time && vencedor.id === time.id ? 'cdb-vencedor' : ''}">${time ? time.nome : 'A definir'}</span>
+      <span>${confronto.vencedor_id || confronto.agregado_a || confronto.agregado_b ? golsAgregado : ''}</span>
+    </div>
+  `;
+
+  const penaltisTxt = confronto.foi_penaltis ? `<div class="cdb-confronto-sub">Pênaltis: ${confronto.penaltis_a}-${confronto.penaltis_b}</div>` : "";
+
+  return `
+    <div class="cdb-confronto-card ${vencedor ? 'cdb-definido' : ''}" onclick="mmAbrirPrimeiroJogoBracket('${confronto.id}')">
+      ${linhaTime(timeA, confronto.agregado_a)}
+      ${linhaTime(timeB, confronto.agregado_b)}
+      ${penaltisTxt}
+    </div>
+  `;
+}
+
+async function mmAbrirPrimeiroJogoBracket(confrontoId) {
+  const { data: jogos } = await supabaseClient
+    .from("jogos")
+    .select("id, perna")
+    .eq("confronto_id", confrontoId)
+    .order("perna", { ascending: true });
+
+  if (jogos && jogos.length) {
+    window.location.href = `jogo?id=${jogos[0].id}`;
+  }
 }
 
 // =========================================================

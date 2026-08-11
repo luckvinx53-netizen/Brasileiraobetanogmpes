@@ -599,10 +599,13 @@ function sortearQuartetoArbitragem() {
 }
 
 // Sorteia o quarteto e grava (upsert) na tabela arbitragem_jogo, depois
-// atualiza a exibição na sub-aba "Dados".
-async function sortearESalvarArbitragem(jogoId) {
+// atualiza a exibição na sub-aba "Dados". Passe silencioso=true quando
+// chamado em lote (ex: sorteio de chaveamento da Copa do Brasil, onde
+// vários jogos são criados de uma vez) pra não repetir toast/atualizar
+// um painel de jogo que nem está aberto.
+async function sortearESalvarArbitragem(jogoId, silencioso = false) {
   if (!arbitrosCbfCache.length) {
-    notificar("Cadastre árbitros CBF na aba \"Times\" antes de sortear.", "aviso");
+    if (!silencioso) notificar("Cadastre árbitros CBF na aba \"Times\" antes de sortear.", "aviso");
     return;
   }
 
@@ -613,11 +616,12 @@ async function sortearESalvarArbitragem(jogoId) {
     .upsert({ jogo_id: jogoId, ...quarteto }, { onConflict: "jogo_id" });
 
   if (error) {
-    notificar("Jogo salvo, mas houve erro ao sortear a arbitragem: " + error.message, "erro");
+    if (!silencioso) notificar("Jogo salvo, mas houve erro ao sortear a arbitragem: " + error.message, "erro");
+    else console.error("Erro ao sortear arbitragem em lote:", error);
     return;
   }
 
-  exibirArbitragemSorteada(quarteto);
+  if (!silencioso) exibirArbitragemSorteada(quarteto);
 }
 
 // Chamado pelo botão "Sortear novamente" na sub-aba Dados de um jogo já salvo.

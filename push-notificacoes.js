@@ -96,28 +96,27 @@ async function desativarNotificacoesPush() {
   }
 }
 
-// Atualiza visualmente o botão de notificação, se existir na página
+// Atualiza visualmente o botão de notificação, se existir na página.
+// Quando já está ativo, o botão SOME (em vez de virar "Notificações
+// ativadas") — não faz sentido continuar ocupando espaço na Home só
+// pra confirmar um estado que o visitante já escolheu.
 async function atualizarBotaoNotificacao() {
   const btn = document.getElementById("btnNotificacoes");
   if (!btn) return;
 
   const status = await statusInscricaoPush();
 
-  if (status === "sem-suporte") {
+  if (status === "sem-suporte" || status === "ativo") {
     btn.classList.add("hidden");
     return;
   }
 
-  if (status === "ativo") {
-    btn.innerHTML = "🔔 Notificações ativadas";
-    btn.onclick = desativarComConfirmacao;
-  } else {
-    btn.innerHTML = "🔕 Ativar notificações de gol";
-    btn.onclick = async () => {
-      const ok = await ativarNotificacoesPush();
-      if (ok) atualizarBotaoNotificacao();
-    };
-  }
+  btn.classList.remove("hidden");
+  btn.innerHTML = "🔕 Ativar notificações de gol";
+  btn.onclick = async () => {
+    const ok = await ativarNotificacoesPush();
+    if (ok) atualizarBotaoNotificacao();
+  };
 }
 
 async function desativarComConfirmacao() {

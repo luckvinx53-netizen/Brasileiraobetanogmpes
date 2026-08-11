@@ -14,12 +14,12 @@
 <main class="container">
 
   <div id="heroCompeticao" class="hero">
-    <div class="tag">🏆🇧🇷 Boas Vindas ao</div>
-    <h1>Brasileirão<br>Betano</h1>
-    <p>Acompanhe classificação, jogos, estatísticas e informações dos clubes em tempo real.</p>
+    <div class="tag" id="heroTag">🏆 Boas Vindas ao</div>
+    <h1 id="heroTitulo">&nbsp;</h1>
+    <p id="heroDescricao">&nbsp;</p>
     <div class="hero-actions">
       <button class="btn btn-primary" onclick="location.href='jogos'">Ver jogos</button>
-      <button class="btn btn-secondary" onclick="location.href='classificacao'">Classificação</button>
+      <button class="btn btn-secondary" id="btnHeroClassificacao" onclick="location.href='classificacao'">Classificação</button>
     </div>
   </div>
 
@@ -27,11 +27,11 @@
     🔕 Ativar notificações de gol
   </button>
 
-  <div class="stat-grid">
-    <div class="stat-card"><div class="num" id="totalTimes">–</div><div class="label">Times</div></div>
-    <div class="stat-card"><div class="num" id="rodadaAtual">–</div><div class="label">Rodada</div></div>
-    <div class="stat-card"><div class="num" id="pontosLider">–</div><div class="label">Pts. líder</div></div>
-    <div class="stat-card"><div class="num" id="totalGols">–</div><div class="label">Gols</div></div>
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card"><div class="num" id="statCard1Num">–</div><div class="label" id="statCard1Label">Times</div></div>
+    <div class="stat-card"><div class="num" id="statCard2Num">–</div><div class="label" id="statCard2Label">Rodada</div></div>
+    <div class="stat-card"><div class="num" id="statCard3Num">–</div><div class="label" id="statCard3Label">Pts. líder</div></div>
+    <div class="stat-card"><div class="num" id="statCard4Num">–</div><div class="label" id="statCard4Label">Gols</div></div>
   </div>
 
   <div class="section-title">
@@ -44,10 +44,10 @@
   </div>
 
   <div class="section-title">
-    <h2>Classificação</h2>
-    <a class="see-all" href="classificacao">Tabela completa</a>
+    <h2 id="tituloSecaoClassificacaoHome">Classificação</h2>
+    <a class="see-all" href="classificacao" id="linkSecaoClassificacaoHome">Tabela completa</a>
   </div>
-  <div class="table-wrap">
+  <div class="table-wrap" id="tabelaWrapHome">
     <table>
       <thead>
         <tr><th>#</th><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr>
@@ -55,6 +55,7 @@
       <tbody id="classificacaoHome"></tbody>
     </table>
   </div>
+  <div id="bracketHome" style="display:none;"></div>
 
 </main>
 

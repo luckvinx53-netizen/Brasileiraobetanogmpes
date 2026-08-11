@@ -93,11 +93,21 @@ async function carregarTemporadasAdmin() {
 
 // Monta os campos do formulário de criação dinamicamente, a partir das
 // colunas extras descobertas — hoje: nome, ano, total_rodadas.
+// A Copa do Brasil é mata-mata (16 times sorteados, sem rodadas fixas),
+// então o campo "total_rodadas" não faz sentido pra ela e fica de fora
+// do formulário — o banco preenche sozinho com o valor padrão (38).
 async function montarFormularioNovaTemporada() {
   const colunasExtras = await tpDescobrirColunasExtras();
   const container = document.getElementById("camposNovaTemporadaAdmin");
 
-  container.innerHTML = colunasExtras.map(c => `
+  const competicaoAtual = typeof getCompeticaoAtual === "function" ? await getCompeticaoAtual() : null;
+  const ehMataMata = competicaoAtual?.formato === "mata_mata";
+
+  const colunasParaExibir = ehMataMata
+    ? colunasExtras.filter(c => c !== "total_rodadas")
+    : colunasExtras;
+
+  container.innerHTML = colunasParaExibir.map(c => `
     <div class="field">
       <label>${tpRotuloCampo(c)}</label>
       <input type="text" data-campo-temporada="${c}" value="${tpValorPadraoCampo(c)}" placeholder="${tpRotuloCampo(c)}">

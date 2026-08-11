@@ -494,6 +494,14 @@ function mcLinkEstadioHtml(jogo) {
   `;
 }
 
+// Nome do jogador como link pra página dele (jogador.html), igual ao
+// padrão já usado no card "Sobre o jogador" das matérias. Sem id (ex:
+// evento antigo cadastrado só com o nome em texto), cai pra texto puro.
+function mcLinkJogadorHtml(jogadorId, nome) {
+  if (!jogadorId) return nome;
+  return `<a href="jogador.html?id=${jogadorId}" style="color:inherit;text-decoration:none;">${nome}</a>`;
+}
+
 function mcTimelineLinhaHtml(e, casa, fora) {
   const icone = ICONES_EVENTO[e.tipo] || "📝";
 
@@ -503,9 +511,9 @@ function mcTimelineLinhaHtml(e, casa, fora) {
 
   let legenda = "";
   if (e.tipo === "Substituição" && e.jogador_secundario_nome) {
-    legenda = `Entra: ${e.jogador_secundario_nome}`;
+    legenda = `Entra: ${mcLinkJogadorHtml(e.jogador_secundario_id, e.jogador_secundario_nome)}`;
   } else if ((e.tipo === "Gol" || e.tipo === "Pênalti Marcado") && e.jogador_secundario_nome) {
-    legenda = `Assistência: ${e.jogador_secundario_nome}`;
+    legenda = `Assistência: ${mcLinkJogadorHtml(e.jogador_secundario_id, e.jogador_secundario_nome)}`;
   } else if (e.tipo !== "Gol") {
     legenda = e.tipo;
   }
@@ -518,7 +526,7 @@ function mcTimelineLinhaHtml(e, casa, fora) {
   const conteudo = `
     <span class="icone">${icone}</span>
     <span>
-      <span class="nome">${e.jogador_nome || "—"}</span>
+      <span class="nome">${mcLinkJogadorHtml(e.jogador_id, e.jogador_nome || "—")}</span>
       ${legenda ? `<span class="desc">${legenda}</span>` : ""}
     </span>
   `;
@@ -672,7 +680,9 @@ function mcArbitragemCardHtml(arbitragem) {
           ${funcoes.map(f => `
             <div class="mc-arbitro-item">
               <span class="mc-arbitro-funcao">${f.label}</span>
-              <span class="mc-arbitro-nome">${arbitragem[f.chave] || "—"}</span>
+              ${arbitragem[f.chave]
+                ? `<a class="mc-arbitro-nome" style="text-decoration:none;color:inherit;" href="arbitro.html?nome=${encodeURIComponent(arbitragem[f.chave])}">${arbitragem[f.chave]}</a>`
+                : `<span class="mc-arbitro-nome">—</span>`}
             </div>
           `).join("")}
         </div>

@@ -21,7 +21,6 @@ const NAV_ICONS = {
 // Itens que ficam escondidos atrás do menu "☰" na topbar — páginas
 // secundárias que não cabem na bottom-nav principal.
 const MENU_EXTRA_ITEMS = [
-  { href: "copa-do-brasil", icon: "copadobrasil", label: "Copa do Brasil" },
   { href: "feed", icon: "feed", label: "Rede Social" },
   { href: "fantasy", icon: "fantasy", label: "Fantasy — Meu Cartola" },
   { href: "bid", icon: "bid", label: "BID — Transferências" },
