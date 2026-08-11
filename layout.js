@@ -97,11 +97,12 @@ function montarLayout() {
   marcarNavAtiva();
   adicionarLinkMeuTimeSeTecnico();
 
-  // Seletor de competição (Brasileirão/Libertadores/Sul-Americana/Copa do
-  // Brasil): busca as competições e aplica o tema de cor da selecionada.
-  // Fica em competicoes.js, carregado como script compartilhado — se por
-  // algum motivo a página não incluir esse script, o slot simplesmente
-  // fica com o texto fixo "Brasileirão Betano" (comportamento antigo).
+  // Indicador de competição (Brasileirão/Libertadores/Sul-Americana/
+  // Copa do Brasil): busca a competição ativa (escolhida antes, na tela
+  // selecionar-competicao.html) e aplica o tema de cor dela. Fica em
+  // competicoes.js, carregado como script compartilhado — se por algum
+  // motivo a página não incluir esse script, o slot simplesmente fica
+  // com o texto fixo "Brasileirão Betano" (comportamento antigo).
   if (typeof inicializarSeletorCompeticao === "function") {
     inicializarSeletorCompeticao();
   }

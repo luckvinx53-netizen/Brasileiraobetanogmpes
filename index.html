@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Brasileirão Betano — Início</title>
 <link rel="stylesheet" href="style.css">
+<script>
+  // Gate: se ainda não há campeonato escolhido, manda direto pra tela
+  // de seleção antes de renderizar qualquer coisa da home (evita o
+  // "flash" da home genérica). Roda cedo, ainda no <head>, checando só
+  // o localStorage — não depende do Supabase ter carregado.
+  if (!localStorage.getItem("competicaoSelecionadaSlug")) {
+    window.location.replace("selecionar-competicao");
+  }
+</script>
 </head>
 <body>
 

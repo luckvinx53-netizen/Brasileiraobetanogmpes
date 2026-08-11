@@ -201,11 +201,9 @@ button{ font-family: inherit; }
 
 .menu-extra-painel a svg{ width: 18px; height: 18px; flex-shrink:0; }
 
-/* ---------- SELETOR DE COMPETIÇÃO ---------- */
-.seletor-competicao{
-  position: relative;
-}
-
+/* ---------- INDICADOR DE COMPETIÇÃO (topbar) ---------- */
+/* Não é mais um dropdown — só mostra a competição ativa e leva de
+   volta pra tela de seleção (selecionar-competicao.html) ao clicar. */
 .seletor-competicao-btn{
   display:flex;
   align-items:center;
@@ -239,54 +237,69 @@ button{ font-family: inherit; }
   text-overflow: ellipsis;
 }
 
-.seletor-competicao-seta{
-  width: 15px; height: 15px;
+/* ---------- TELA DE SELEÇÃO DE COMPETIÇÃO ---------- */
+.sel-comp-intro{
+  padding: 28px 4px 6px;
+  text-align: center;
+}
+
+.sel-comp-intro h1{
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 800;
+  margin: 0 0 8px;
+  letter-spacing: .2px;
+}
+
+.sel-comp-intro p{
+  font-size: 14px;
   color: var(--text-dim);
+  margin: 0;
+}
+
+.sel-comp-grid{
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 22px;
+}
+
+.sel-comp-card{
+  display:flex;
+  align-items:center;
+  gap: 14px;
+  width: 100%;
+  background: var(--bg-elev-1);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--cor-item, var(--grama));
+  border-radius: var(--radius-md);
+  padding: 18px 16px;
+  cursor: pointer;
+  text-align: left;
+  transition: transform .12s ease, filter .12s ease;
+}
+
+.sel-comp-card:active{ transform: scale(.98); }
+.sel-comp-card:hover{ filter: brightness(1.12); }
+
+.sel-comp-card-emoji{
+  font-size: 26px;
+  line-height: 1;
   flex-shrink: 0;
 }
 
-.seletor-competicao-painel{
-  position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
-  background: var(--bg-elev-2);
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  padding: 6px;
-  min-width: 230px;
-  box-shadow: 0 12px 32px rgba(0,0,0,.4);
-  z-index: 40;
+.sel-comp-card-nome{
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: .2px;
+  flex: 1;
 }
 
-.seletor-competicao-item{
-  display:flex;
-  align-items:center;
-  gap: 10px;
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 8px;
-  background: none;
-  border: none;
-  color: var(--text);
-  font-size: 13.5px;
-  font-weight: 600;
-  font-family: var(--font-body);
-  cursor: pointer;
-  text-align: left;
-  border-left: 3px solid var(--cor-item, transparent);
-}
-
-.seletor-competicao-item:hover{
-  background: var(--bg-elev-1);
-}
-
-.seletor-competicao-item.active{
-  color: var(--cor-item, var(--grama));
-}
-
-.seletor-competicao-check{
-  margin-left: auto;
-  color: var(--cor-item, var(--grama));
+.sel-comp-card-seta{
+  width: 18px; height: 18px;
+  color: var(--text-dim);
+  flex-shrink: 0;
 }
 
 /* ---------- MATA-MATA — BRACKET ---------- */

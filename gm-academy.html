@@ -1,6 +1,14 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
+<script>
+  // Gate: se ainda não há campeonato escolhido, manda pra tela de
+  // seleção antes de renderizar a página (evita cair direto numa
+  // página interna sem competição definida).
+  if (!localStorage.getItem("competicaoSelecionadaSlug")) {
+    window.location.replace("selecionar-competicao");
+  }
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>GM Academy — Brasileirão Betano</title>

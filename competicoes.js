@@ -115,51 +115,21 @@ function hexParaRgbObj(hex) {
   return { r: (bigint >> 16) & 255, g: (bigint >> 8) & 255, b: bigint & 255 };
 }
 
-// Monta o HTML do seletor (dropdown) usado no topbar. Chamado pelo
-// layout.js ao montar o header.
+// Monta o HTML do indicador de competição usado no topbar. Não é mais
+// um dropdown — a troca de campeonato agora acontece só voltando pra
+// tela de seleção (selecionar-competicao.html), então isso aqui é só
+// um botão que mostra qual competição está ativa e leva de volta pra
+// lá. Chamado pelo layout.js ao montar o header.
 function seletorCompeticaoHtml(competicoes, atual) {
   if (!competicoes || !competicoes.length) return "";
 
   return `
-    <div id="seletorCompeticao" class="seletor-competicao">
-      <button id="btnSeletorCompeticao" class="seletor-competicao-btn" onclick="alternarSeletorCompeticao()">
-        <span class="seletor-competicao-emoji">${atual?.logo_emoji || "🏆"}</span>
-        <span class="seletor-competicao-nome">${atual?.nome_curto || "Competição"}</span>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="seletor-competicao-seta">
-          <path d="m6 9 6 6 6-6"/>
-        </svg>
-      </button>
-      <div id="painelSeletorCompeticao" class="seletor-competicao-painel hidden">
-        ${competicoes.map(c => `
-          <button
-            class="seletor-competicao-item ${c.slug === atual?.slug ? "active" : ""}"
-            style="--cor-item: ${c.cor_primaria};"
-            onclick="selecionarCompeticao('${c.slug}')"
-          >
-            <span class="seletor-competicao-emoji">${c.logo_emoji}</span>
-            <span>${c.nome_curto}</span>
-            ${c.slug === atual?.slug ? `<span class="seletor-competicao-check">✓</span>` : ""}
-          </button>
-        `).join("")}
-      </div>
-    </div>
+    <button id="btnSeletorCompeticao" class="seletor-competicao-btn" onclick="location.href='selecionar-competicao'">
+      <span class="seletor-competicao-emoji">${atual?.logo_emoji || "🏆"}</span>
+      <span class="seletor-competicao-nome">${atual?.nome_curto || "Competição"}</span>
+    </button>
   `;
 }
-
-function alternarSeletorCompeticao() {
-  const painel = document.getElementById("painelSeletorCompeticao");
-  if (!painel) return;
-  painel.classList.toggle("hidden");
-}
-
-document.addEventListener("click", (e) => {
-  const painel = document.getElementById("painelSeletorCompeticao");
-  const botao = document.getElementById("btnSeletorCompeticao");
-  if (!painel || painel.classList.contains("hidden")) return;
-  if (!painel.contains(e.target) && e.target !== botao && !botao?.contains(e.target)) {
-    painel.classList.add("hidden");
-  }
-});
 
 // Inicializa o seletor: busca competições + a atual, injeta o HTML no
 // slot que o layout.js deixou reservado, e aplica o tema. Chamado pelo
