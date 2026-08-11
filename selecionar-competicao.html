@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasileirão Betano — Escolha o campeonato</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+
+<header class="topbar">
+  <div class="topbar-inner">
+    <div class="brand">
+      <div class="brand-mark">B</div>
+      <div class="brand-text">
+        <h1>CAMPEONATO GMPES</h1>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <div class="sel-comp-intro">
+    <h1>Qual campeonato você quer acompanhar?</h1>
+    <p>Escolha abaixo para ver jogos, classificação e estatísticas.</p>
+  </div>
+
+  <div id="listaCompeticoes" class="sel-comp-grid">
+    <div class="skeleton" style="height:110px;"></div>
+    <div class="skeleton" style="height:110px;"></div>
+    <div class="skeleton" style="height:110px;"></div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="selecionar-competicao.js"></script>
+
+</body>
+</html>
