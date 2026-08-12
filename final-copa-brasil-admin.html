@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Final da Copa do Brasil</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- GATE DE LOGIN — mesma tabela "admins" da Central Admin principal -->
+<div class="gate" id="gateLogin">
+  <div class="gate-card">
+    <h2>🏆 Admin — Final da Copa do Brasil</h2>
+    <p>Entre com sua conta de administrador para gerenciar a final.</p>
+
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmail" placeholder="voce@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-block" id="btnEntrarAdmin" onclick="fcbFazerLogin()">Entrar</button>
+    <p class="text-dim" style="font-size:12px;margin-top:14px;text-align:center;">
+      Só usuários cadastrados como admin no banco têm acesso de escrita.
+    </p>
+  </div>
+</div>
+
+<!-- CONTEÚDO ADMIN -->
+<div id="conteudoAdmin" class="hidden">
+  <main class="container">
+
+    <div class="section-title">
+      <h2>🏆 Admin — Final da Copa do Brasil</h2>
+      <button class="btn btn-ghost btn-sm" onclick="fcbFazerLogout()">Sair</button>
+    </div>
+
+    <p class="text-dim" style="font-size:12.5px;margin-top:-10px;margin-bottom:16px;">
+      Página separada da Central Admin do Brasileirão — a final é um jogo único, fora da
+      temporada normal. <a href="admin.html" style="color:inherit;">Ir para a Central Admin →</a>
+    </p>
+
+    <!-- DADOS DO JOGO -->
+    <div class="card" style="margin-bottom:16px;">
+      <h3 style="margin-top:0;">Dados da final</h3>
+
+      <input type="hidden" id="finalId">
+
+      <div class="row-2">
+        <div class="field">
+          <label>Time da casa</label>
+          <select id="finalTimeCasa" onchange="fcbPreencherEstadioMandante()"></select>
+        </div>
+        <div class="field">
+          <label>Time visitante</label>
+          <select id="finalTimeFora"></select>
+        </div>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="finalData">
+        </div>
+        <div class="field">
+          <label>Horário</label>
+          <input type="time" id="finalHora">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Local (estádio)</label>
+        <input type="text" id="finalLocal" placeholder="Ex: Maracanã, Rio de Janeiro">
+      </div>
+
+      <p class="mc-sub-titulo" style="margin-top:20px;">Arbitragem</p>
+      <div class="row-2">
+        <div class="field"><label>Árbitro</label><input type="text" id="finalArbitro"></div>
+        <div class="field"><label>4º Árbitro</label><input type="text" id="finalQuartoArbitro"></div>
+      </div>
+      <div class="row-2">
+        <div class="field"><label>1º Assistente</label><input type="text" id="finalAssistente1"></div>
+        <div class="field"><label>2º Assistente</label><input type="text" id="finalAssistente2"></div>
+      </div>
+      <button type="button" class="btn btn-secondary btn-block" style="margin-top:8px;" onclick="fcbSortearArbitragem()">🎲 Sortear árbitros</button>
+
+      <button class="btn btn-primary btn-block" style="margin-top:14px;" onclick="fcbSalvarFinal()">Salvar dados da final</button>
+    </div>
+
+    <!-- CONTROLE AO VIVO (status/minuto/placar manuais) -->
+    <div class="card hidden" id="fcbCardAoVivo" style="margin-bottom:16px;">
+      <h3 style="margin-top:0;">Controle ao vivo</h3>
+      <p class="text-dim" style="font-size:12px;margin-top:-8px;margin-bottom:14px;">
+        Diferente dos jogos normais do Brasileirão, a final NÃO corre sozinha (0'→90' automático).
+        Como os elencos estão incompletos, você mesmo controla o status e o minuto aqui, e narra
+        os lances na aba abaixo.
+      </p>
+
+      <div class="field">
+        <label>Status</label>
+        <select id="finalStatus" onchange="fcbAlternarCamposAoVivo()">
+          <option value="Agendado">Agendado</option>
+          <option value="Em andamento">Em andamento</option>
+          <option value="Intervalo">Intervalo</option>
+          <option value="Encerrado">Encerrado</option>
+          <option value="Adiado">Adiado</option>
+        </select>
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Minuto atual</label>
+          <input type="number" id="finalMinutoAtual" min="0" max="130" placeholder="Ex: 23">
+        </div>
+        <div class="field"></div>
+      </div>
+
+      <p class="mc-sub-titulo">Placar</p>
+      <div class="row-2">
+        <div class="field"><label id="labelPlacarCasa">Casa</label><input type="number" id="finalPlacarCasa" min="0"></div>
+        <div class="field"><label id="labelPlacarFora">Fora</label><input type="number" id="finalPlacarFora" min="0"></div>
+      </div>
+
+      <p class="text-dim" style="font-size:12px;">Se a final for aos pênaltis, preencha os campos abaixo (opcional).</p>
+      <div class="row-2">
+        <div class="field"><label>Pênaltis casa</label><input type="number" id="finalPenaltisCasa" min="0"></div>
+        <div class="field"><label>Pênaltis fora</label><input type="number" id="finalPenaltisFora" min="0"></div>
+      </div>
+
+      <button class="btn btn-primary btn-block" style="margin-top:8px;" onclick="fcbSalvarStatusAoVivo()">Atualizar status/placar/minuto</button>
+    </div>
+
+    <!-- NARRAÇÃO DA FINAL -->
+    <div class="card hidden" id="fcbCardNarracao">
+      <h3 style="margin-top:0;">Narração da final</h3>
+      <p class="text-dim" style="font-size:12px;margin-top:-8px;margin-bottom:14px;">
+        Lança cada lance manualmente (texto, no estilo 365Scores/SofaScore) — sem depender do
+        elenco cadastrado, já que os times ainda não estão completos.
+      </p>
+
+      <div class="field">
+        <label>Tipo de evento</label>
+        <div class="chips-evento" id="fcbChipsTipoEvento">
+          <button type="button" class="chip-evento active" data-tipo="Gol" onclick="fcbSelecionarTipoEvento('Gol', this)">⚽ Gol</button>
+          <button type="button" class="chip-evento" data-tipo="Gol Contra" onclick="fcbSelecionarTipoEvento('Gol Contra', this)">⚽ Contra</button>
+          <button type="button" class="chip-evento" data-tipo="Pênalti Marcado" onclick="fcbSelecionarTipoEvento('Pênalti Marcado', this)">🥅 Pênalti</button>
+          <button type="button" class="chip-evento" data-tipo="Pênalti Perdido" onclick="fcbSelecionarTipoEvento('Pênalti Perdido', this)">❌ Perdeu pên.</button>
+          <button type="button" class="chip-evento" data-tipo="Cartão Amarelo" onclick="fcbSelecionarTipoEvento('Cartão Amarelo', this)">🟨 Amarelo</button>
+          <button type="button" class="chip-evento" data-tipo="Cartão Vermelho" onclick="fcbSelecionarTipoEvento('Cartão Vermelho', this)">🟥 Vermelho</button>
+          <button type="button" class="chip-evento" data-tipo="Substituição" onclick="fcbSelecionarTipoEvento('Substituição', this)">🔄 Substituição</button>
+          <button type="button" class="chip-evento" data-tipo="Narração" onclick="fcbSelecionarTipoEvento('Narração', this)">📝 Narração livre</button>
+        </div>
+        <input type="hidden" id="fcbTipoEvento" value="Gol">
+      </div>
+
+      <div class="row-2">
+        <div class="field">
+          <label>Minuto</label>
+          <input type="number" id="fcbMinutoEvento" min="0" max="130" placeholder="Ex: 23">
+        </div>
+        <div class="field" id="fcbCampoTimeEvento">
+          <label>Time</label>
+          <select id="fcbTimeEvento"></select>
+        </div>
+      </div>
+
+      <div class="row-2" id="fcbCamposJogadores">
+        <div class="field">
+          <label id="fcbLabelJogadorPrincipal">Quem fez o gol</label>
+          <input type="text" id="fcbJogadorEvento" placeholder="Nome do jogador">
+        </div>
+        <div class="field">
+          <label id="fcbLabelJogadorSecundario">Assistência (opcional)</label>
+          <input type="text" id="fcbJogadorSecundarioEvento" placeholder="Nome do jogador">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Descrição / narração (opcional)</label>
+        <textarea id="fcbDescricaoEvento" placeholder="Ex: Bela jogada pela direita antes de finalizar..."></textarea>
+      </div>
+
+      <button class="btn btn-primary btn-block" onclick="fcbSalvarEvento()">Adicionar à narração</button>
+
+      <p class="mc-sub-titulo" style="margin-top:20px;">Linha do jogo</p>
+      <div id="fcbListaEventos" class="mc-timeline"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="utils.js"></script>
+<script src="final-copa-brasil-admin.js"></script>
+
+</body>
+</html>
