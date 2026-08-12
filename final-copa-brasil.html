@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Final da Copa do Brasil — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  /* Identidade visual própria da final: dourado, separado do tema das
+     competições normais (que trocam de cor pelo seletor no topbar). */
+  .fcb-topo{
+    background: linear-gradient(135deg, #1a1405 0%, #241a06 100%);
+    border: 1px solid #4a3a10;
+    border-radius: 18px;
+    padding: 22px 18px;
+    text-align: center;
+    margin-bottom: 16px;
+  }
+  .fcb-topo .fcb-titulo{
+    font-family: var(--font-display);
+    font-size: 15px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: #e6c869;
+    margin: 0 0 4px;
+  }
+  .fcb-topo .fcb-sub{
+    font-size: 12px;
+    color: var(--text-dim);
+    margin: 0;
+  }
+</style>
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div class="fcb-topo">
+    <p class="fcb-titulo">🏆 Final da Copa do Brasil</p>
+    <p class="fcb-sub">Edição especial — fora da temporada do Brasileirão</p>
+  </div>
+
+  <div id="detalhesFinal">
+    <div class="skeleton" style="height:220px;margin-bottom:16px;"></div>
+    <div class="skeleton" style="height:140px;"></div>
+  </div>
+
+  <div id="fcbBolhaContainer" class="mc-evento-bolha-container" aria-live="polite"></div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="push-notificacoes.js"></script>
+<script src="final-copa-brasil.js"></script>
+
+</body>
+</html>
