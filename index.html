@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brasileirão Betano — Início</title>
+<link rel="stylesheet" href="style.css">
+<script>
+  // A home nunca é a primeira tela: sempre que o site é aberto do
+  // zero (index.html), manda direto pra seleção de campeonato — mesmo
+  // que já exista uma competição escolhida antes. A pessoa escolhe (ou
+  // confirma) o campeonato ali e só depois cai na home.
+  //
+  // Exceção: a navegação que VEM da própria tela de seleção
+  // (irParaCompeticao(), em selecionar-competicao.js) chega aqui com
+  // "?ok=1" na URL — sem checar isso o index mandaria de volta pra
+  // seleção, que mandaria pra cá de novo, num loop infinito. Usamos a
+  // query string (não sessionStorage) porque ela chega garantida no
+  // destino, já que é parte da própria URL da navegação — não depende
+  // de nenhum storage do navegador sobreviver ao redirect.
+  if (new URLSearchParams(window.location.search).get("ok") === "1") {
+    // Limpa o "?ok=1" da barra de endereço sem recarregar a página,
+    // só pra não deixar isso visível nem reaparecer com F5.
+    window.history.replaceState({}, "", window.location.pathname);
+  } else {
+    window.location.replace("selecionar-competicao");
+  }
+</script>
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+
+  <div id="heroCompeticao" class="hero">
+    <div class="tag" id="heroTag">🏆 Boas Vindas ao</div>
+    <h1 id="heroTitulo">&nbsp;</h1>
+    <p id="heroDescricao">&nbsp;</p>
+    <div class="hero-actions">
+      <button class="btn btn-primary" onclick="location.href='jogos'">Ver jogos</button>
+      <button class="btn btn-secondary" id="btnHeroClassificacao" onclick="location.href='classificacao'">Classificação</button>
+    </div>
+  </div>
+
+  <button id="btnNotificacoes" class="btn btn-secondary btn-block" style="margin-top:14px;">
+    🔕 Ativar notificações de gol
+  </button>
+
+  <div class="stat-grid" id="statGrid">
+    <div class="stat-card"><div class="num" id="statCard1Num">–</div><div class="label" id="statCard1Label">Times</div></div>
+    <div class="stat-card"><div class="num" id="statCard2Num">–</div><div class="label" id="statCard2Label">Rodada</div></div>
+    <div class="stat-card"><div class="num" id="statCard3Num">–</div><div class="label" id="statCard3Label">Pts. líder</div></div>
+    <div class="stat-card"><div class="num" id="statCard4Num">–</div><div class="label" id="statCard4Label">Gols</div></div>
+  </div>
+
+  <div class="section-title">
+    <h2>Próximos jogos</h2>
+    <a class="see-all" href="jogos">Ver tudo</a>
+  </div>
+  <div id="proximosJogos">
+    <div class="skeleton" style="height:120px;margin-bottom:12px;"></div>
+    <div class="skeleton" style="height:120px;"></div>
+  </div>
+
+  <div class="section-title">
+    <h2 id="tituloSecaoClassificacaoHome">Classificação</h2>
+    <a class="see-all" href="classificacao" id="linkSecaoClassificacaoHome">Tabela completa</a>
+  </div>
+  <div class="table-wrap" id="tabelaWrapHome">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>SG</th></tr>
+      </thead>
+      <tbody id="classificacaoHome"></tbody>
+    </table>
+  </div>
+  <div id="bracketHome" style="display:none;"></div>
+
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="capa-noticia.js"></script>
+<script src="posts-rede-social.js"></script>
+<script src="push-notificacoes.js"></script>
+<script src="home.js"></script>
+
+</body>
+</html>
