@@ -1,0 +1,339 @@
+/* =========================================================
+   CAMPO TÁTICO — visual de campo de futebol para escalação
+   ========================================================= */
+
+.campo-tatico{
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  background:
+    linear-gradient(180deg, #0d3d1f, #0a2e17);
+  border-radius: var(--radius-md);
+  border: 2px solid rgba(255,255,255,.15);
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+/* linhas do campo, puramente decorativas */
+.campo-tatico::before{
+  content:"";
+  position:absolute;
+  inset: 6%;
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 4px;
+}
+.campo-tatico::after{
+  content:"";
+  position:absolute;
+  top: 50%; left: 50%;
+  width: 22%; aspect-ratio:1;
+  border: 2px solid rgba(255,255,255,.18);
+  border-radius: 50%;
+  transform: translate(-50%,-50%);
+}
+
+.posicao-slot{
+  position: absolute;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.posicao-slot .marcador{
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--bg-elev-1);
+  border: 2px solid var(--grama);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--grama);
+  box-shadow: 0 4px 12px rgba(0,0,0,.4);
+  transition: transform .12s ease, background .12s ease;
+}
+
+.posicao-slot.preenchido .marcador{
+  background: var(--grama);
+  color: #06110b;
+}
+
+.posicao-slot:active .marcador{ transform: scale(.92); }
+
+.posicao-slot .nome-jogador{
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0,0,0,.8);
+  max-width: 70px;
+  text-align: center;
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- MODAL DE ESCOLHA DE JOGADOR ---------- */
+.modal-jogador-overlay{
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.6);
+  z-index: 600;
+  display:flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.modal-jogador-sheet{
+  background: var(--bg-elev-1);
+  border-radius: 20px 20px 0 0;
+  width: 100%;
+  max-width: 480px;
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 20px;
+  border-top: 1px solid var(--line-strong);
+}
+
+.modal-jogador-sheet h3{
+  font-family: var(--font-display);
+  font-size: 20px;
+  margin: 0 0 14px;
+}
+
+.opcao-jogador{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  background: var(--bg-elev-2);
+  border-radius: var(--radius-sm);
+  margin-bottom: 8px;
+  cursor: pointer;
+}
+
+.opcao-jogador .info h4{ margin:0 0 2px; font-size:14px; font-weight:700; }
+.opcao-jogador .info p{ margin:0; font-size:11.5px; color: var(--text-dim); }
+.opcao-jogador.selecionado{ border: 1px solid var(--grama); }
+.opcao-jogador.indisponivel{ opacity: .35; pointer-events: none; }
+
+/* ---------- BADGE DE PRAZO ---------- */
+.prazo-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  background: var(--ouro-bg);
+  color: var(--ouro);
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 700;
+  margin-bottom: 10px;
+}
+.prazo-badge.urgente{ background: var(--vermelho-bg); color: var(--vermelho); }
+
+/* ---------- SUB-ABAS DENTRO DO BID ---------- */
+.subtabs-bid{
+  display:flex;
+  gap:8px;
+  margin-bottom:16px;
+  overflow-x:auto;
+}
+.subtab-btn{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:9px 14px;
+  border-radius:100px;
+  border:1px solid var(--line-strong);
+  background: var(--bg-elev-1);
+  color: var(--text-dim);
+  font-size:13px;
+  font-weight:700;
+  cursor:pointer;
+  white-space:nowrap;
+}
+.subtab-btn.active{
+  background: var(--tema-primaria, var(--grama));
+  border-color: var(--tema-primaria, var(--grama));
+  color:#fff;
+}
+.subaba-bid.hidden{ display:none; }
+
+/* ---------- BOTÃO EMAIL NA TOPBAR ---------- */
+.btn-email-topo{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width: 38px; height: 38px;
+  padding: 0 !important;
+  position: relative;
+}
+
+.btn-email-topo svg{ width: 19px; height: 19px; }
+
+.btn-email-topo .bolinha-notificacao{
+  position:absolute;
+  top: 4px;
+  right: 5px;
+  left: auto;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  background: var(--vermelho);
+  border:2px solid var(--bg-elev-1);
+}
+
+/* ---------- BADGE DE CONTADOR (ex: negociações pendentes) ---------- */
+.badge-contador{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  min-width:18px;
+  height:18px;
+  padding:0 5px;
+  border-radius:100px;
+  background: var(--vermelho);
+  color:#fff;
+  font-size:11px;
+  font-weight:800;
+}
+
+/* ---------- CARD DE EMAIL / MENSAGEM ---------- */
+.email-item{
+  background: var(--bg-elev-2);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+  margin-bottom: 10px;
+  border-left: 3px solid var(--line-strong);
+}
+.email-item.nao-lida{
+  border-left-color: var(--tema-primaria, var(--grama));
+  background: var(--bg-elev-1);
+}
+.email-item .email-topo{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-bottom:6px;
+}
+.email-item .email-titulo{
+  font-size:14px;
+  font-weight:700;
+  margin:0;
+}
+.email-item .email-data{
+  font-size:11px;
+  color: var(--text-faint);
+  white-space:nowrap;
+}
+.email-item .email-corpo{
+  font-size:13px;
+  color: var(--text-dim);
+  margin:0 0 10px;
+  line-height:1.4;
+}
+.email-item .email-acoes{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+/* ---------- CARD DE CONSULTA (negociações / elenco de outros times) ---------- */
+.consulta-item{
+  background: var(--bg-elev-2);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  margin-bottom: 8px;
+}
+.consulta-item .info h4{ margin:0 0 2px; font-size:14px; font-weight:700; }
+.consulta-item .info p{ margin:0; font-size:12px; color: var(--text-dim); }
+.status-consulta{
+  display:inline-block;
+  font-size:11px;
+  font-weight:700;
+  padding:3px 9px;
+  border-radius:100px;
+  margin-top:6px;
+}
+.status-consulta.pendente{ background: var(--ouro-bg); color: var(--ouro); }
+.status-consulta.recusado{ background: var(--vermelho-bg); color: var(--vermelho); }
+.status-consulta.respondido{ background: var(--grama-bg); color: var(--grama); }
+.status-consulta.negociando{ background: var(--ouro-bg); color: var(--ouro); }
+.status-consulta.aceito{ background: var(--grama-bg); color: var(--grama); }
+
+/* ---------- LISTA DE RESERVAS (banco de suplentes) ---------- */
+.lista-reservas-escalacao{
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+}
+.chip-reserva{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--line);
+  background: var(--bg-elev-1);
+  cursor: pointer;
+  transition: border-color .12s ease, background .12s ease;
+}
+.chip-reserva.selecionado{
+  border-color: var(--grama);
+  background: var(--grama-bg);
+}
+.chip-reserva .numero{
+  width: 28px; height:28px;
+  border-radius:50%;
+  background: var(--bg-elev-2);
+  color: var(--text-dim);
+  font-size:11px;
+  font-weight:800;
+  display:flex; align-items:center; justify-content:center;
+  flex-shrink:0;
+}
+.chip-reserva.selecionado .numero{
+  background: var(--grama);
+  color: #06110b;
+}
+.chip-reserva .info{ flex:1; min-width:0; }
+.chip-reserva .info h4{ margin:0; font-size:13.5px; font-weight:700; }
+.chip-reserva .info p{ margin:0; font-size:11.5px; color: var(--text-dim); }
+.chip-reserva .check{
+  font-size: 16px;
+  color: var(--grama);
+  opacity: 0;
+  transition: opacity .12s ease;
+}
+.chip-reserva.selecionado .check{ opacity: 1; }
+.chip-reserva.indisponivel{
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+/* Checkbox com label ao lado, usado nos modais de venda/contraproposta (Scout) */
+.check-inline{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:13px;
+  cursor:pointer;
+}
+.check-inline input[type="checkbox"]{
+  width:16px;
+  height:16px;
+  flex-shrink:0;
+  accent-color: var(--grama);
+}
