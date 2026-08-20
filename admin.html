@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Central Admin — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!--
+  DIAGNÓSTICO TEMPORÁRIO — não é uma correção, é só pra descobrir o
+  erro que está deixando a tela em branco. Mostra qualquer erro JS
+  numa faixa vermelha no topo da tela. Remover depois de resolvido.
+-->
+<div id="diagnosticoErroGlobal" style="display:none;position:fixed;top:0;left:0;right:0;z-index:99999;background:#3a0d0d;color:#ffb4b4;font-family:monospace;font-size:12px;padding:12px;white-space:pre-wrap;word-break:break-all;border-bottom:2px solid #ff4444;max-height:60vh;overflow:auto;"></div>
+<script>
+  window.addEventListener("error", function (evento) {
+    var caixa = document.getElementById("diagnosticoErroGlobal");
+    if (!caixa) return;
+    caixa.style.display = "block";
+    caixa.innerText += "\nERRO: " + evento.message + "\nArquivo: " + evento.filename + " (linha " + evento.lineno + ", coluna " + evento.colno + ")\n";
+  });
+  window.addEventListener("unhandledrejection", function (evento) {
+    var caixa = document.getElementById("diagnosticoErroGlobal");
+    if (!caixa) return;
+    caixa.style.display = "block";
+    caixa.innerText += "\nPROMISE REJEITADA: " + (evento.reason && evento.reason.message ? evento.reason.message : JSON.stringify(evento.reason)) + "\n";
+  });
+</script>
+
+<div id="toast"></div>
+
+<!-- GATE DE LOGIN -->
+<div class="gate" id="gateLogin">
+  <div class="gate-card">
+    <h2>Central Admin</h2>
+    <p>Entre com sua conta de administrador para gerenciar o campeonato.</p>
+
+    <div class="field">
+      <label>E-mail</label>
+      <input type="email" id="loginEmail" placeholder="voce@exemplo.com">
+    </div>
+    <div class="field">
+      <label>Senha</label>
+      <input type="password" id="loginSenha" placeholder="••••••••">
+    </div>
+
+    <button class="btn btn-primary btn-block" id="btnEntrarAdmin" onclick="fazerLogin()">Entrar</button>
+    <p class="text-dim" style="font-size:12px;margin-top:14px;text-align:center;">
+      Só usuários cadastrados como admin no banco têm acesso de escrita.
+    </p>
+  </div>
+</div>
+
+<!-- CONTEÚDO ADMIN (só aparece após login validado) -->
+<div id="conteudoAdmin" class="hidden">
+
+  <div id="topbar-slot"></div>
+
+  <main class="container">
+
+    <div class="section-title">
+      <h2>Central Admin</h2>
+      <button class="btn btn-ghost btn-sm" onclick="fazerLogout()">Sair</button>
+    </div>
+
+    <!-- ABAS DE COMPETIÇÃO — cada competição (Brasileirão, Libertadores,
+         Sul-Americana, Copa do Brasil...) tem sua própria aba aqui. Ao
+         clicar, o admin passa a gerenciar Jogos/Times/Jogadores/Técnicos/
+         Rede Social/Temporadas DAQUELA competição — sem precisar sair do
+         admin pra trocar o "tema" em selecionar-competicao.html. Montado
+         dinamicamente por competicoes-admin.js (carrega da tabela
+         "competicoes"). -->
+    <p class="text-dim" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:6px;">Competição</p>
+    <div class="tabs-row tabs-row-competicoes" id="tabsCompeticoesAdmin"></div>
+
+    <!-- ABAS DE CONTEÚDO DA COMPETIÇÃO SELECIONADA — trocam de acordo com
+         o formato da competição (pontos-corridos mostra "Jogos"; mata-mata
+         como a Copa do Brasil mostra "Chaveamento" no lugar). Montado por
+         competicoes-admin.js logo após as abas de competição. -->
+    <div class="tabs-row" id="tabsConteudoCompeticaoAdmin"></div>
+
+    <!-- ABAS GLOBAIS — não pertencem a nenhuma competição específica
+         (Notícias e BID valem pro site inteiro). -->
+    <p class="text-dim" style="font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;margin:14px 0 6px;">Geral</p>
+    <div class="tabs-row">
+      <button class="tab-btn" onclick="abrirAba('abaNoticias', this)">Notícias</button>
+      <button class="tab-btn" onclick="abrirAba('abaBid', this)">BID</button>
+    </div>
+
+    <p class="text-dim" style="font-size:12px;margin-top:14px;">
+      🏆 A final da Copa do Brasil tem administração própria, separada da temporada:
+      <a href="final-copa-brasil-admin.html" style="color:inherit;">abrir admin da final →</a>
+    </p>
+
+    <!-- ABA JOGOS -->
+    <div id="abaJogos" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <button class="btn btn-primary btn-block" onclick="novoJogo()">+ Cadastrar novo jogo</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Jogos cadastrados</h3>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Filtrar por rodada</label>
+          <select id="filtroRodadaAdminWrap" class="select-rodada" onchange="selecionarRodadaFiltroAdmin(this.value)">
+            <option value="">Selecione uma rodada</option>
+          </select>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btnPdfRodadaAdmin" style="margin-bottom:12px;display:none;" onclick="baixarPdfArbitragemRodada()">📄 Baixar PDF da arbitragem desta rodada</button>
+        <div id="listaJogosAdmin"></div>
+      </div>
+
+      <!-- PAINEL DE UM JOGO (cadastro básico + escalação + eventos), só aparece
+           quando um jogo está sendo criado/editado -->
+      <div class="card hidden" id="painelJogo">
+
+        <div class="flex-gap" style="justify-content:space-between;align-items:center;margin-bottom:4px;">
+          <h3 style="margin:0;" id="painelJogoTitulo">Novo jogo</h3>
+          <button class="btn btn-ghost btn-sm" onclick="fecharPainelJogo()">Fechar ✕</button>
+        </div>
+
+        <input type="hidden" id="jogoId">
+
+        <div class="tabs-row" id="subAbasJogo" style="margin-top:14px;">
+          <button class="tab-btn active" data-sub="subDados" onclick="abrirSubAbaJogo('subDados', this)">Dados</button>
+          <button class="tab-btn" data-sub="subEventos" onclick="abrirSubAbaJogo('subEventos', this)">Eventos / Simulação</button>
+          <button class="tab-btn" data-sub="subEstatisticas" onclick="abrirSubAbaJogo('subEstatisticas', this)">Estatísticas</button>
+        </div>
+
+        <!-- SUB-ABA: DADOS DO JOGO -->
+        <div id="subDados">
+          <div class="row-2">
+            <div class="field">
+              <label>Time da casa</label>
+              <select id="timeCasa" onchange="atualizarTimesEscalacaoEvento()"></select>
+            </div>
+            <div class="field">
+              <label>Time visitante</label>
+              <select id="timeFora" onchange="atualizarTimesEscalacaoEvento()"></select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Rodada</label>
+            <input type="number" id="rodada" placeholder="Ex: 1">
+          </div>
+
+          <div class="field">
+            <label>Data e horário do jogo (início da simulação)</label>
+            <input type="datetime-local" id="hora_inicio_simulacao">
+            <p class="text-dim" style="font-size:12px;margin-top:6px;">
+              É a partir desse instante que o site conta os minutos (0–90) e libera/notifica os
+              eventos marcados na aba "Eventos / Simulação", na hora certa.
+            </p>
+          </div>
+
+          <p class="text-dim" style="font-size:12px;margin-top:-6px;">
+            🏟️ Estádio, capacidade e foto são definidos automaticamente pelo time mandante
+            (edite isso na aba "Times").
+          </p>
+
+          <p class="mc-sub-titulo" style="margin-top:20px;">Arbitragem</p>
+          <p class="text-dim" style="font-size:12px;margin-top:-4px;">
+            Sorteada automaticamente entre os árbitros CBF cadastrados (aba "Times" →
+            gerenciamento de árbitros) ao salvar o jogo. Cada função sorteia dentro da sua
+            própria categoria (Central / Assistente / Vídeo), sem repetir nome no mesmo jogo.
+          </p>
+          <div id="arbitragemSorteada" class="mc-arbitragem-lista" style="margin-bottom:12px;">
+            <p class="text-dim" style="font-size:12.5px;">Ainda não sorteada — salve o jogo para sortear.</p>
+          </div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="resortearArbitragem()">🎲 Sortear novamente</button>
+
+          <div class="flex-gap" style="margin-top:14px;">
+            <button class="btn btn-primary" onclick="salvarJogo()">Salvar jogo</button>
+            <button class="btn btn-warning" onclick="descomputarJogoAtual()">Descomputar</button>
+          </div>
+        </div>
+
+        <!-- SUB-ABA: EVENTOS / SIMULAÇÃO -->
+        <div id="subEventos" class="hidden">
+          <p class="text-dim" style="font-size:12px;margin-top:0;margin-bottom:14px;">
+            Salve o jogo primeiro na aba "Dados" para liberar os eventos. O jogo começa e
+            termina sozinho (ver aviso no fim desta aba) — aqui você só lança o que os
+            jogadores fizeram em campo.
+          </p>
+
+          <div class="field">
+            <label>Tipo de evento</label>
+            <div class="chips-evento" id="chipsTipoEvento">
+              <button type="button" class="chip-evento active" data-tipo="Gol" onclick="selecionarTipoEvento('Gol', this)">⚽ Gol</button>
+              <button type="button" class="chip-evento" data-tipo="Gol Contra" onclick="selecionarTipoEvento('Gol Contra', this)">⚽ Contra</button>
+              <button type="button" class="chip-evento" data-tipo="Pênalti Marcado" onclick="selecionarTipoEvento('Pênalti Marcado', this)">🥅 Pênalti</button>
+              <button type="button" class="chip-evento" data-tipo="Pênalti Perdido" onclick="selecionarTipoEvento('Pênalti Perdido', this)">❌ Perdeu pên.</button>
+              <button type="button" class="chip-evento" data-tipo="Cartão Amarelo" onclick="selecionarTipoEvento('Cartão Amarelo', this)">🟨 Amarelo</button>
+              <button type="button" class="chip-evento" data-tipo="Cartão Vermelho" onclick="selecionarTipoEvento('Cartão Vermelho', this)">🟥 Vermelho</button>
+              <button type="button" class="chip-evento" data-tipo="Substituição" onclick="selecionarTipoEvento('Substituição', this)">🔄 Substituição</button>
+            </div>
+            <input type="hidden" id="tipoEvento" value="Gol">
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label>Etapa</label>
+              <select id="minutoEvento"></select>
+            </div>
+            <div class="field">
+              <label>Time</label>
+              <select id="timeEvento" onchange="carregarJogadoresDoTimeEvento()"></select>
+            </div>
+          </div>
+
+          <div class="row-2">
+            <div class="field">
+              <label id="labelJogadorPrincipal">Quem fez o gol</label>
+              <select id="jogadorEvento" onchange="checarNovoJogadorEvento(this)"></select>
+            </div>
+            <div class="field">
+              <label id="labelJogadorSecundario">Assistência (opcional)</label>
+              <select id="jogadorSecundarioEvento" onchange="checarNovoJogadorEvento(this)">
+                <option value="">Nenhuma</option>
+              </select>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-block" onclick="salvarEvento()">Adicionar evento</button>
+
+          <p class="mc-sub-titulo" style="margin-top:20px;">Linha do jogo</p>
+          <div id="listaEventosJogo" class="mc-timeline"></div>
+
+          <hr style="border:none;border-top:1px solid var(--line);margin:18px 0;">
+
+          <p class="text-dim" style="font-size:12px;margin-top:0;">
+            ⏱️ O jogo começa e termina sozinho: o status muda automaticamente com base no
+            horário definido na aba "Dados", e o placar é calculado pelos eventos de
+            Gol/Gol Contra/Pênalti Marcado, sendo computado na tabela ao chegar aos 90'.
+          </p>
+        </div>
+
+        <!-- SUB-ABA: ESTATÍSTICAS -->
+        <div id="subEstatisticas" class="hidden">
+          <p class="text-dim" style="font-size:12px;margin-top:0;margin-bottom:14px;">
+            Salve o jogo primeiro na aba "Dados" para liberar esta aba. Tudo aqui aparece
+            na aba "Estatísticas" da página pública do jogo.
+          </p>
+
+          <p class="mc-sub-titulo" style="margin-top:0;">Números comparativos</p>
+          <div id="formStatsComparativas">
+            <div class="adm-stat-linha">
+              <label>Posse de bola (%)</label>
+              <input type="number" id="statPosseCasa" placeholder="Casa" min="0" max="100">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statPosseFora" placeholder="Fora" min="0" max="100">
+            </div>
+            <div class="adm-stat-linha">
+              <label>Chutes</label>
+              <input type="number" id="statChutesCasa" placeholder="Casa" min="0">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statChutesFora" placeholder="Fora" min="0">
+            </div>
+            <div class="adm-stat-linha">
+              <label>Chutes no gol</label>
+              <input type="number" id="statChutesGolCasa" placeholder="Casa" min="0">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statChutesGolFora" placeholder="Fora" min="0">
+            </div>
+            <div class="adm-stat-linha">
+              <label>Escanteios</label>
+              <input type="number" id="statEscanteiosCasa" placeholder="Casa" min="0">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statEscanteiosFora" placeholder="Fora" min="0">
+            </div>
+            <div class="adm-stat-linha">
+              <label>Faltas</label>
+              <input type="number" id="statFaltasCasa" placeholder="Casa" min="0">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statFaltasFora" placeholder="Fora" min="0">
+            </div>
+            <div class="adm-stat-linha">
+              <label>Impedimentos</label>
+              <input type="number" id="statImpedimentosCasa" placeholder="Casa" min="0">
+              <span class="text-dim" style="text-align:center;font-size:11px;">x</span>
+              <input type="number" id="statImpedimentosFora" placeholder="Fora" min="0">
+            </div>
+          </div>
+          <button class="btn btn-primary btn-block" onclick="salvarEstatisticasJogo()">Salvar estatísticas</button>
+
+          <hr style="border:none;border-top:1px solid var(--line);margin:22px 0;">
+
+          <p class="mc-sub-titulo" style="margin-top:0;">Melhores momentos (vídeo)</p>
+          <p class="text-dim" style="font-size:12px;margin-top:-6px;margin-bottom:10px;">
+            Envie o vídeo do lance direto do celular. Fica salvo no Storage do Supabase.
+          </p>
+          <div class="field">
+            <label>Legenda (opcional)</label>
+            <input type="text" id="momentoLegenda" placeholder="Ex: Gol de fulano aos 23'">
+          </div>
+          <input type="file" id="momentoArquivo" accept="video/*" style="margin:8px 0;">
+          <p id="statusUploadMomento" class="text-dim" style="font-size:12px;min-height:16px;"></p>
+          <button class="btn btn-primary btn-block" onclick="enviarMelhorMomento()">Enviar vídeo</button>
+
+          <div id="listaMelhoresMomentos" style="margin-top:14px;"></div>
+
+          <hr style="border:none;border-top:1px solid var(--line);margin:22px 0;">
+
+          <p class="mc-sub-titulo" style="margin-top:0;">Notas da partida</p>
+          <p class="text-dim" style="font-size:12px;margin-top:-6px;margin-bottom:10px;">
+            Só aparecem aqui os jogadores escalados como titulares ou que entraram através de
+            uma substituição lançada na aba "Eventos / Simulação".
+          </p>
+          <div id="listaNotasJogo"></div>
+          <button class="btn btn-primary btn-block" style="margin-top:10px;" onclick="salvarNotasJogo()">Salvar notas</button>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ABA TIMES -->
+    <div id="abaTimes" class="hidden">
+      <div class="card hidden" id="cardFormTime" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;" id="tituloFormTime">Editar time</h3>
+
+        <input type="hidden" id="timeId">
+
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="nomeTime" placeholder="Ex: Flamengo">
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Sigla</label>
+            <input type="text" id="siglaTime" placeholder="Ex: FLA" maxlength="4">
+          </div>
+          <div class="field">
+            <label>URL do escudo</label>
+            <input type="text" id="escudoTime" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Cidade</label>
+            <input type="text" id="cidadeTime" placeholder="Ex: Rio de Janeiro">
+          </div>
+          <div class="field">
+            <label>Estádio</label>
+            <input type="text" id="estadioTime" placeholder="Ex: Maracanã">
+          </div>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Capacidade do estádio</label>
+            <input type="text" id="capacidadeEstadioTime" placeholder="Ex: 45.000">
+          </div>
+          <div class="field">
+            <label>URL foto do estádio</label>
+            <input type="text" id="fotoEstadioTime" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Orçamento inicial</label>
+          <input type="number" id="orcamentoTime" placeholder="Ex: 50000000" min="0" step="1">
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Patrocinador master</label>
+            <input type="text" id="patrocinadorMasterTime" placeholder="Ex: Betano">
+          </div>
+          <div class="field">
+            <label>Logo do patrocinador (URL, opcional)</label>
+            <input type="text" id="patrocinadorMasterLogoTime" placeholder="https://...">
+          </div>
+        </div>
+
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="salvarTime()">Salvar time</button>
+          <button class="btn btn-ghost" onclick="fecharFormularioTime()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card hidden" id="cardEstatisticasTime" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;" id="tituloEstatisticasTime">Ajustar estatísticas manualmente</h3>
+        <div class="field">
+          <label>Time</label>
+          <select id="timeTabela" onchange="preencherTimeManual()"></select>
+        </div>
+
+        <div class="row-3">
+          <div class="field"><label>Pontos</label><input type="number" id="pontos"></div>
+          <div class="field"><label>Jogos</label><input type="number" id="jogosCount"></div>
+          <div class="field"><label>Vitórias</label><input type="number" id="vitorias"></div>
+        </div>
+        <div class="row-3">
+          <div class="field"><label>Empates</label><input type="number" id="empates"></div>
+          <div class="field"><label>Derrotas</label><input type="number" id="derrotas"></div>
+          <div class="field"><label>Gols pró</label><input type="number" id="gols_pro"></div>
+        </div>
+        <div class="field"><label>Gols contra</label><input type="number" id="gols_contra"></div>
+
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="atualizarEstatisticasTime()">Salvar estatísticas</button>
+          <button class="btn btn-ghost" onclick="fecharEstatisticasTime()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="flex-gap" style="justify-content:space-between;align-items:center;margin-bottom:14px;">
+          <h3 style="margin:0;">Times cadastrados</h3>
+          <button class="btn btn-primary btn-sm" onclick="abrirFormularioNovoTime()">+ Novo time</button>
+        </div>
+        <div id="listaTimesAdmin"></div>
+      </div>
+
+      <div class="card" style="margin-top:16px;">
+        <h3 style="margin-top:0;">Árbitros CBF</h3>
+        <p class="text-dim" style="font-size:12px;margin-top:-6px;">
+          Lista usada para sortear automaticamente o quarteto de arbitragem de cada jogo
+          (aba "Jogos"). Cada categoria sorteia separadamente: Central vira árbitro,
+          Assistente vira 1º/2º assistente, Vídeo vira 4º árbitro.
+        </p>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Nome</label>
+            <input type="text" id="nomeArbitroCbf" placeholder="Nome completo">
+          </div>
+          <div class="field">
+            <label>Categoria</label>
+            <select id="categoriaArbitroCbf">
+              <option value="central">Central</option>
+              <option value="assistente">Assistente</option>
+              <option value="video">Vídeo (VAR)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="salvarArbitroCbf()">+ Adicionar árbitro</button>
+
+        <div id="listaArbitrosCbf" style="margin-top:16px;"></div>
+      </div>
+    </div>
+
+    <!-- ABA JOGADORES -->
+    <div id="abaJogadores" class="hidden">
+      <div class="card" id="cardAtualizarElenco" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Atualizar elenco via IA (busca na web)</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;">
+          Usa o Gemini com busca no Google pra conferir o elenco atual real de cada time e completar o banco:
+          cria jogador que falta, preenche posição/idade de quem já está cadastrado, e remove quem a IA confirmar que saiu do clube.
+          Recomendado só até o início do campeonato — a busca pode errar nome/posição ocasionalmente, então dá pra conferir depois em "Ver log de mudanças".
+        </p>
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="atualizarElencoTodosOsTimes()">Atualizar todos os 20 times</button>
+          <button class="btn btn-ghost" onclick="abrirModalAtualizarElencoUmTime()">Atualizar só um time</button>
+        </div>
+        <div id="progressoAtualizacaoElenco" style="margin-top:14px;"></div>
+      </div>
+
+      <div class="card" id="formJogadorWrap" style="margin-bottom:16px;" hidden>
+        <h3 style="margin-top:0;">Cadastrar / editar jogador</h3>
+        <p class="text-dim" style="font-size:12px;margin-top:-8px;margin-bottom:16px;">
+          Gols, assistências e cartões não são mais editados aqui — eles são contados
+          automaticamente pelos eventos lançados na aba "Jogos".
+        </p>
+
+        <input type="hidden" id="jogadorId">
+
+        <div class="field">
+          <label>Nome</label>
+          <input type="text" id="nomeJogador" placeholder="Nome do jogador">
+        </div>
+
+        <div class="field">
+          <label>Time</label>
+          <select id="timeJogador"></select>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Posição</label>
+            <select id="posicaoJogador">
+              <option value="">Selecione</option>
+              <option value="GOL">Goleiro (GOL)</option>
+              <option value="ZAG">Zagueiro (ZAG)</option>
+              <option value="LD">Lateral direito (LD)</option>
+              <option value="LE">Lateral esquerdo (LE)</option>
+              <option value="VOL">Volante (VOL)</option>
+              <option value="MC">Meio-campo (MC)</option>
+              <option value="MEI">Meia atacante (MEI)</option>
+              <option value="PD">Ponta direita (PD)</option>
+              <option value="PE">Ponta esquerda (PE)</option>
+              <option value="SA">Segundo atacante (SA)</option>
+              <option value="ATA">Atacante (ATA)</option>
+            </select>
+          </div>
+          <div class="field"><label>Número</label><input type="number" id="numeroJogador"></div>
+        </div>
+
+        <div class="field">
+          <label style="display:flex;align-items:center;gap:8px;">
+            <input type="checkbox" id="regularizadoJogador" checked style="width:auto;">
+            Regularizado (apto a jogar / fora do BID)
+          </label>
+        </div>
+
+        <p class="mc-sub-titulo" style="margin-top:16px;">Salário e empresário</p>
+        <div class="row-2">
+          <div class="field"><label>Salário mensal</label><input type="number" id="salarioJogador" min="0" step="1" placeholder="Ex: 200000"></div>
+          <div class="field"><label>Comissão do empresário (%)</label><input type="number" id="comissaoJogador" min="0" max="100" step="0.1" placeholder="Ex: 10"></div>
+        </div>
+        <div class="field">
+          <label>Empresário</label>
+          <select id="empresarioJogador" onchange="alternarCampoNovoEmpresario('admJog')">
+            <option value="">Nenhum</option>
+            <option value="__novo__">+ Cadastrar novo empresário</option>
+          </select>
+        </div>
+        <div id="admJogNovoEmpresarioCampos" class="hidden">
+          <div class="field"><label>Nome do empresário</label><input type="text" id="admJogNovoEmpresarioNome"></div>
+          <div class="row-2">
+            <div class="field"><label>Telefone</label><input type="text" id="admJogNovoEmpresarioTelefone"></div>
+            <div class="field"><label>E-mail</label><input type="text" id="admJogNovoEmpresarioEmail"></div>
+          </div>
+        </div>
+
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="salvarJogador()">Salvar jogador</button>
+          <button class="btn btn-ghost" onclick="fecharFormularioJogador()">Cancelar</button>
+        </div>
+      </div>
+
+      <div class="flex-gap" style="margin-bottom:16px;">
+        <button class="btn btn-primary" onclick="abrirFormularioNovoJogador()">+ Novo jogador</button>
+      </div>
+
+
+      <div class="card">
+        <h3 style="margin-top:0;">Jogadores cadastrados</h3>
+        <div class="field" style="margin-bottom:14px;">
+          <label>Filtrar por time</label>
+          <select id="filtroTimeJogadores" class="select-rodada" onchange="renderizarListaJogadoresAdmin()">
+            <option value="">Selecione um time</option>
+          </select>
+        </div>
+        <div id="listaJogadoresAdmin"></div>
+      </div>
+    </div>
+
+    <!-- ABA NOTÍCIAS -->
+    <div id="abaNoticias" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Gerar capa da notícia</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:16px;">
+          Monta uma capa gráfica estilo transmissão esportiva, direto no navegador.
+        </p>
+
+        <div class="field">
+          <label>Estilo</label>
+          <select id="capaEstilo" onchange="atualizarCamposEstilo()">
+            <option value="breaking">Breaking News (faixa vermelha)</option>
+            <option value="destaque">Destaque (faixa verde)</option>
+            <option value="resultado">Resultado de jogo (placar)</option>
+          </select>
+        </div>
+
+        <div class="row-2">
+          <div class="field">
+            <label>Time relacionado</label>
+            <select id="capaTime" onchange="desenharCapa()"><option value="">Nenhum / genérico</option></select>
+          </div>
+          <div class="field">
+            <label>Time adversário (só p/ resultado)</label>
+            <select id="capaTimeAdversario" onchange="desenharCapa()"><option value="">—</option></select>
+          </div>
+        </div>
+
+        <div class="row-2 hidden" id="camposPlacar">
+          <div class="field"><label>Placar time 1</label><input type="number" id="capaPlacar1" value="0" oninput="desenharCapa()"></div>
+          <div class="field"><label>Placar time 2</label><input type="number" id="capaPlacar2" value="0" oninput="desenharCapa()"></div>
+        </div>
+
+        <div class="field">
+          <label>Texto principal (título da capa)</label>
+          <input type="text" id="capaTitulo" placeholder="Ex: GABIGOL MARCA DUAS VEZES" oninput="desenharCapa()">
+        </div>
+
+        <div class="field">
+          <label>Texto secundário (linha de apoio)</label>
+          <input type="text" id="capaSubtitulo" placeholder="Ex: Bahia vence e assume a ponta" oninput="desenharCapa()">
+        </div>
+
+        <div style="border-radius:16px;overflow:hidden;border:1px solid var(--line);margin-bottom:14px;">
+          <canvas id="canvasCapa" width="1200" height="675" style="width:100%;display:block;background:#0a0d12;"></canvas>
+        </div>
+
+        <div class="flex-gap">
+          <button class="btn btn-secondary" onclick="desenharCapa()">🔄 Atualizar preview</button>
+          <button class="btn btn-primary" onclick="usarCapaGerada()">Usar esta capa na notícia ↓</button>
+        </div>
+        <div id="statusUploadCapa" class="text-dim" style="font-size:12px;margin-top:10px;"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Publicar notícia</h3>
+
+        <input type="hidden" id="noticiaId">
+
+        <div class="field"><label>Título</label><input type="text" id="tituloNoticia"></div>
+        <div class="field"><label>Resumo</label><input type="text" id="resumoNoticia"></div>
+        <div class="field">
+          <label>URL da imagem (preenchido automaticamente pelo gerador acima, ou cole a sua)</label>
+          <input type="text" id="imagemNoticia" placeholder="https://...">
+        </div>
+        <div class="field"><label>Conteúdo completo</label><textarea id="conteudoNoticia"></textarea></div>
+
+        <div class="flex-gap">
+          <button class="btn btn-primary" onclick="salvarNoticia()">Publicar</button>
+          <button class="btn btn-ghost" onclick="limparFormularioNoticia()">Novo</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Notícias publicadas</h3>
+        <div id="listaNoticiasAdmin"></div>
+      </div>
+    </div>
+
+    <!-- ABA TÉCNICOS -->
+    <div id="abaTecnicos" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Prazo geral de escalação</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Quantas horas antes do início do jogo a opção de enviar escalação se fecha para o técnico. A escalação fica aberta desde já e fecha automaticamente nesse prazo.
+        </p>
+        <div class="field">
+          <label>Horas antes do jogo</label>
+          <input type="number" id="prazoEscalacaoHoras" placeholder="Ex: 2">
+        </div>
+        <button class="btn btn-primary btn-block" onclick="salvarPrazoEscalacao()">Salvar prazo</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Vincular técnico a um time</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          O usuário precisa já existir no Supabase Authentication
+          (Authentication → Users → Add user) antes de vincular aqui.
+        </p>
+
+        <div class="field">
+          <label>E-mail do técnico (já cadastrado em Authentication)</label>
+          <input type="email" id="emailTecnico" placeholder="tecnico@exemplo.com">
+        </div>
+        <div class="field">
+          <label>Time</label>
+          <select id="timeTecnicoNovo"></select>
+        </div>
+        <div class="field">
+          <label>Nome do técnico (opcional, só pra exibição)</label>
+          <input type="text" id="nomeTecnicoNovo" placeholder="Ex: João">
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="vincularTecnico()">Vincular técnico</button>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Técnicos vinculados</h3>
+        <div id="listaTecnicosAdmin"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">🎓 GM Academy — Enviar proposta</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Escolha um clube sem técnico e um técnico licenciado (cadastrado pelo GM Academy) para enviar uma proposta de contratação.
+        </p>
+
+        <div class="field">
+          <label>Clube sem técnico</label>
+          <select id="gmAdminTimeSelect"></select>
+        </div>
+        <div class="field">
+          <label>Técnico licenciado</label>
+          <select id="gmAdminTecnicoSelect"></select>
+        </div>
+        <div class="field">
+          <label>Mensagem (opcional)</label>
+          <textarea id="gmAdminMensagem" placeholder="Ex: O clube busca um técnico com perfil ofensivo para a reta final da temporada."></textarea>
+        </div>
+
+        <button class="btn btn-primary btn-block" onclick="gmAdminEnviarProposta()">Enviar proposta</button>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Propostas em aberto</h3>
+        <div id="gmAdminListaPropostas"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Escalações recebidas</h3>
+        <div class="field">
+          <label>Jogo</label>
+          <select id="jogoEscalacaoRecebida" onchange="carregarEscalacoesRecebidas()"></select>
+        </div>
+        <div id="listaEscalacoesRecebidas"></div>
+        <button class="btn btn-warning btn-block" style="margin-top:12px;" onclick="sortearEscalacaoFaltante()">
+          🎲 Sortear escalação para quem não enviou
+        </button>
+      </div>
+    </div>
+
+    <!-- ABA BID -->
+    <div id="abaBid" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">Janela de transferências</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          A aba BID só fica visível para os técnicos dentro desse período.
+        </p>
+        <div class="row-2">
+          <div class="field"><label>Início</label><input type="datetime-local" id="bidJanelaInicio"></div>
+          <div class="field"><label>Fim</label><input type="datetime-local" id="bidJanelaFim"></div>
+        </div>
+        <button class="btn btn-primary btn-block" onclick="salvarJanelaBid()">Salvar janela</button>
+        <p id="statusJanelaBid" class="text-dim" style="font-size:12.5px;margin-top:12px;"></p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Solicitações de regularização</h3>
+        <div class="field">
+          <label>Time</label>
+          <select id="timeFiltroSolicitacoesBid" onchange="carregarSolicitacoesBidAdmin()">
+            <option value="">Todos os times</option>
+          </select>
+        </div>
+        <div id="listaSolicitacoesBid"></div>
+      </div>
+    </div>
+
+    <!-- ABA REDE SOCIAL -->
+    <div id="abaRedeSocial" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">📢 Publicar nota oficial (CBF)</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Publica no perfil oficial da CBF dentro da Rede Social, para a competição
+          atualmente selecionada no seletor do topbar.
+        </p>
+
+        <div class="field"><label>Título</label><input type="text" id="notaOficialTitulo" placeholder="Ex: Comunicado sobre a 15ª rodada"></div>
+        <div class="field"><label>Texto</label><textarea id="notaOficialCorpo" placeholder="Conteúdo da nota oficial..."></textarea></div>
+
+        <button class="btn btn-primary btn-block" onclick="publicarNotaOficialAdmin()">Publicar nota oficial</button>
+        <p id="statusNotaOficial" class="text-dim" style="font-size:12.5px;margin-top:12px;"></p>
+      </div>
+
+      <div class="card">
+        <h3 style="margin-top:0;">Posts recentes</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Matchday, escalação e fim de jogo são publicados automaticamente. Aqui você só acompanha.
+        </p>
+        <div id="listaRedeSocialAdmin"></div>
+      </div>
+    </div>
+
+    <!-- ABA TEMPORADAS -->
+    <div id="abaTemporadas" class="hidden">
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;" id="tituloAbaTemporadas">Temporadas</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Temporadas da competição selecionada acima. Só uma fica ativa por vez — o
+          site inteiro (times, jogos, tabela) segue a ativa.
+        </p>
+        <div id="listaTemporadasAdmin"></div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">+ Nova temporada</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Cria uma temporada nova e a ativa. A temporada atual fica arquivada, mas
+          <strong>seus dados (times, jogos) permanecem intactos</strong> no banco.
+        </p>
+        <div id="camposNovaTemporadaAdmin"></div>
+        <button class="btn btn-primary btn-block" onclick="criarNovaTemporadaAdmin()">Criar e ativar</button>
+      </div>
+
+      <div class="card" style="border-color:var(--vermelho);">
+        <h3 style="margin-top:0;color:var(--vermelho);">⚠️ Zerar temporada atual</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          Apaga <strong>permanentemente</strong> todos os times, jogos, escalações e
+          posts da temporada atual desta competição, e cria uma temporada nova e vazia no
+          lugar. Use para começar uma competição do zero. Esta ação não pode ser desfeita.
+        </p>
+        <button class="btn btn-danger btn-block" onclick="confirmarZerarTemporadaAdmin()">Zerar temporada e começar do zero</button>
+      </div>
+    </div>
+
+    <!-- ABA COPA DO BRASIL (MATA-MATA) -->
+    <div id="abaCopaDoBrasil" class="hidden">
+      <div class="card" style="margin-bottom:16px;">
+        <h3 style="margin-top:0;">🇧🇷 Copa do Brasil — mata-mata</h3>
+        <p class="text-dim" style="font-size:12.5px;margin-top:-8px;margin-bottom:14px;">
+          16 times sorteados do Brasileirão. Oitavas, quartas e semifinal são ida e volta;
+          a final é jogo único. Empate no agregado (ou na final) é decidido nos pênaltis.
+        </p>
+        <div id="cdbConteudo"></div>
+      </div>
+    </div>
+
+  </main>
+
+  <div id="bottomnav-slot"></div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="fantasy.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="capa-noticia.js"></script>
+<script src="posts-rede-social.js"></script>
+<script src="tecnicos-admin.js"></script>
+<script src="bid-admin.js"></script>
+<script src="rede-social-admin.js"></script>
+<script src="temporadas-admin.js"></script>
+<script src="copa-do-brasil-admin.js"></script>
+<script src="competicoes-admin.js"></script>
+<script src="atualizar-elenco-admin.js"></script>
+<script src="admin.js"></script>
+
+</body>
+</html>
