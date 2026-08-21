@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>
+  // Gate: se ainda não há campeonato escolhido, manda pra tela de
+  // seleção antes de renderizar a página (evita cair direto numa
+  // página interna sem competição definida).
+  if (!localStorage.getItem("competicaoSelecionadaSlug")) {
+    window.location.replace("selecionar-competicao");
+  }
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Matéria — Brasileirão Betano</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body class="pagina-materia">
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container container-materia">
+  <div id="materiaConteudo">
+    <div class="skeleton" style="height:28px;width:60%;margin-bottom:12px;"></div>
+    <div class="skeleton" style="height:120px;margin-bottom:16px;"></div>
+    <div class="skeleton" style="height:80px;"></div>
+  </div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="mercado-noticias.js"></script>
+<script src="partida-noticias.js"></script>
+<script src="veiculo-tema.js"></script>
+<script src="materia.js"></script>
+
+</body>
+</html>
