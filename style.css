@@ -1,0 +1,124 @@
+/*
+* === ESTILOS REVISADOS PARA ESTÉTICA DARK MODE/DASHBOARD ===
+* Baseado em dashboards financeiros e de tecnologia avançada.
+* Altera fundos, cores e elementos visuais para um tema moderno e de alto contraste.
+*/
+
+/* 1. Variáveis Globais */
+:root {
+    /* Cores baseadas no tema escuro */
+    --bg-primary: #121212; /* Fundo principal, muito escuro */
+    --bg-secondary: #1e1e1e; /* Cards e painéis secundários */
+    --text-primary: #e0e0e0; /* Texto principal, cinza claro */
+    --text-secondary: #a0a0a0; /* Subtextos e descrições */
+    
+    /* Cores de Destaque (Accent Colors) */
+    --color-primary-accent: #00bcd4; /* Ciano/Azul Elétrico (para botões, links) */
+    --color-success: #4caf50; /* Verde (para ganhos, status OK) */
+    --color-danger: #f44336; /* Vermelho (para perdas, status erro) */
+    --color-info: #2196f3; /* Azul (para informação) */
+
+    /* Transições suaves */
+    --transition-speed: 0.3s;
+}
+
+/* 2. Reset e Corpos Gerais */
+body {
+    font-family: 'Inter', sans-serif; /* Recomendado: Usar uma fonte moderna e legível */
+    background-color: var(--bg-primary);
+    color: var(--text-primary);
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+}
+
+/* 3. Componentes de Cards (Painéis de Dados) */
+.card, .dashboard-widget {
+    background-color: var(--bg-secondary);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); /* Sombra sutil para dar profundidade */
+    transition: transform var(--transition-speed), box-shadow var(--transition-speed);
+    border: 1px solid #2c2c2c; /* Borda sutil */
+}
+
+.card:hover, .dashboard-widget:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4); /* Efeito de "levantar" ao passar o mouse */
+}
+
+/* 4. Cabeçalho e Navegação */
+header {
+    background-color: var(--bg-secondary);
+    border-bottom: 1px solid #2c2c2c;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.btn-primary {
+    background-color: var(--color-primary-accent);
+    color: var(--bg-primary); /* Texto escuro no botão claro de destaque */
+    border: none;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.btn-primary:hover {
+    background-color: #00a8bb; /* Tom ligeiramente mais escuro ao passar o mouse */
+    transform: translateY(-1px);
+}
+
+/* 5. Elementos de Dados e Gráficos */
+.metric-value {
+    font-size: 2.5em;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.metric-label {
+    font-size: 0.9em;
+    color: var(--text-secondary);
+    display: block; /* Garante que o rótulo fique em uma linha própria */
+    margin-bottom: 5px;
+}
+
+/* Estilização de tabelas/listas */
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: var(--bg-secondary);
+}
+
+th, td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid #2c2c2c;
+}
+
+th {
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+/* 6. Respostas de status (ganhos/perdas) */
+.status-gain {
+    color: var(--color-success);
+    font-weight: 600;
+}
+
+.status-loss {
+    color: var(--color-danger);
+    font-weight: 600;
+}
+
+/* Adicionar media queries para responsividade básica em dashboards */
+@media (max-width: 768px) {
+    .card {
+        padding: 15px;
+    }
+    .metric-value {
+        font-size: 2em;
+    }
+}
