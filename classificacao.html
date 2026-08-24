@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<script>
+  // Gate: se ainda não há campeonato escolhido, manda pra tela de
+  // seleção antes de renderizar a página (evita cair direto numa
+  // página interna sem competição definida).
+  if (!localStorage.getItem("competicaoSelecionadaSlug")) {
+    window.location.replace("selecionar-competicao");
+  }
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classificação — Brasileirão PES</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="toast"></div>
+<div id="topbar-slot"></div>
+
+<main class="container">
+  <div class="section-title">
+    <h2 id="tituloClassificacao">Classificação</h2>
+  </div>
+
+  <div class="table-wrap" id="tabelaWrap">
+    <table>
+      <thead>
+        <tr><th>#</th><th>Time</th><th>PTS</th><th>J</th><th>V</th><th>E</th><th>D</th><th>GP</th><th>GC</th><th>SG</th><th>%</th></tr>
+      </thead>
+      <tbody id="tabelaCompleta"></tbody>
+    </table>
+  </div>
+
+  <div id="gruposArea" style="display:none;"></div>
+
+  <div class="card" style="margin-top:18px;" id="legendaZonas"></div>
+
+  <div id="bracketArea" style="display:none;"></div>
+</main>
+
+<div id="bottomnav-slot"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+<script src="supabase-config.js"></script>
+<script src="competicoes.js"></script>
+<script src="utils.js"></script>
+<script src="layout.js"></script>
+<script src="classificacao.js"></script>
+
+</body>
+</html>
